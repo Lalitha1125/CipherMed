@@ -1,0 +1,32 @@
+# Flutter
+.dart_tool/
+build/
+.flutter-plugins-dependencies
+
+# Android
+.gradle/
+local.properties
+key.properties
+*.jks
+*.keystore
+
+# Node.js
+node_modules/
+coverage/
+dist/
+
+# Secretos y configuraciones privadas
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+
+# Archivos temporales
+*.log
+*.bak
+*.dump
+
+# Archivos de configuracion local
+.idea/
+*.iml
