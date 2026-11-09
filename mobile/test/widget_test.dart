@@ -42,9 +42,14 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(
-        find.text('Próximamente: inicio de sesión seguro'),
-        findsOneWidget,
-      );
+  find.text('Bienvenido a CipherMed'),
+  findsOneWidget,
+);
+
+expect(
+  find.text('Ingresar'),
+  findsOneWidget,
+);
     },
   );
 
@@ -57,9 +62,14 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(
-        find.text('Próximamente: registro de pacientes'),
-        findsOneWidget,
-      );
+  find.text('Regístrate en CipherMed'),
+  findsOneWidget,
+);
+
+expect(
+  find.text('Crear mi cuenta'),
+  findsOneWidget,
+);
     },
   );
 }
