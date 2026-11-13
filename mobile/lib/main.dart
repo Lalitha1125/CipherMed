@@ -1,7 +1,8 @@
 
 import 'package:flutter/material.dart';
+
 import 'core/theme/app_theme.dart';
-import 'features/auth/presentation/screens/welcome_screen.dart';
+import 'features/auth/presentation/screens/session_gate_screen.dart';
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
@@ -17,7 +18,8 @@ class CipherMedApp extends StatelessWidget {
       title: 'CipherMed',
       debugShowCheckedModeBanner: false,
       theme: AppTheme.lightTheme,
-      home: const WelcomeScreen(),
+      home: const SessionGateScreen(),
     );
   }
 }
+
