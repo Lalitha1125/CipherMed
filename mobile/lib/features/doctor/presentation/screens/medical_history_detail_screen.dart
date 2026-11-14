@@ -1,4 +1,3 @@
-
 import 'package:flutter/material.dart';
 
 import '../../data/doctor_service.dart';
@@ -40,8 +39,7 @@ class _MedicalHistoryDetailScreenState
     });
 
     try {
-      final registros =
-          await _doctorService.obtenerHistorialPaciente(
+      final registros = await _doctorService.obtenerHistorialPaciente(
         idPaciente: widget.idPaciente,
       );
 
@@ -84,11 +82,7 @@ class _MedicalHistoryDetailScreenState
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Icon(
-            icono,
-            color: const Color(0xFF00796B),
-            size: 22,
-          ),
+          Icon(icono, color: const Color(0xFF00796B), size: 22),
           const SizedBox(width: 12),
           Expanded(
             child: Column(
@@ -103,13 +97,8 @@ class _MedicalHistoryDetailScreenState
                 ),
                 const SizedBox(height: 6),
                 SelectableText(
-                  contenido.isEmpty
-                      ? 'Sin información registrada'
-                      : contenido,
-                  style: const TextStyle(
-                    fontSize: 14,
-                    height: 1.5,
-                  ),
+                  contenido.isEmpty ? 'Sin información registrada' : contenido,
+                  style: const TextStyle(fontSize: 14, height: 1.5),
                 ),
               ],
             ),
@@ -123,9 +112,7 @@ class _MedicalHistoryDetailScreenState
     return Card(
       margin: const EdgeInsets.only(bottom: 18),
       elevation: 1,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(18),
-      ),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
       child: Padding(
         padding: const EdgeInsets.all(20),
         child: Column(
@@ -141,10 +128,7 @@ class _MedicalHistoryDetailScreenState
                 const Expanded(
                   child: Text(
                     'Registro médico',
-                    style: TextStyle(
-                      fontSize: 17,
-                      fontWeight: FontWeight.bold,
-                    ),
+                    style: TextStyle(fontSize: 17, fontWeight: FontWeight.bold),
                   ),
                 ),
               ],
@@ -152,27 +136,22 @@ class _MedicalHistoryDetailScreenState
             const SizedBox(height: 8),
             Text(
               _formatearFecha(historial['fechaRegistro']),
-              style: const TextStyle(
-                color: Colors.black54,
-              ),
+              style: const TextStyle(color: Colors.black54),
             ),
             const Divider(height: 30),
             _campoMedico(
               titulo: 'Descripción',
-              contenido:
-                  (historial['descripcion'] ?? '').toString(),
+              contenido: (historial['descripcion'] ?? '').toString(),
               icono: Icons.description_outlined,
             ),
             _campoMedico(
               titulo: 'Diagnóstico',
-              contenido:
-                  (historial['diagnostico'] ?? '').toString(),
+              contenido: (historial['diagnostico'] ?? '').toString(),
               icono: Icons.health_and_safety_outlined,
             ),
             _campoMedico(
               titulo: 'Tratamiento',
-              contenido:
-                  (historial['tratamiento'] ?? '').toString(),
+              contenido: (historial['tratamiento'] ?? '').toString(),
               icono: Icons.medication_outlined,
             ),
           ],
@@ -193,75 +172,67 @@ class _MedicalHistoryDetailScreenState
       body: RefreshIndicator(
         onRefresh: _consultarHistorial,
         child: _cargando
-            ? const Center(
-                child: CircularProgressIndicator(),
-              )
+            ? const Center(child: CircularProgressIndicator())
             : _error != null
-                ? ListView(
-                    padding: const EdgeInsets.all(24),
-                    children: [
-                      const SizedBox(height: 80),
-                      const Icon(
-                        Icons.lock_outline,
-                        size: 60,
-                        color: Colors.redAccent,
-                      ),
-                      const SizedBox(height: 18),
-                      Text(
-                        _error!,
-                        textAlign: TextAlign.center,
-                      ),
-                      const SizedBox(height: 20),
-                      Center(
-                        child: ElevatedButton(
-                          onPressed: _consultarHistorial,
-                          child: const Text('Reintentar'),
-                        ),
-                      ),
-                    ],
-                  )
-                : _historiales.isEmpty
-                    ? ListView(
-                        padding: const EdgeInsets.all(24),
-                        children: [
-                          const SizedBox(height: 80),
-                          const Icon(
-                            Icons.folder_open_outlined,
-                            size: 65,
-                            color: Colors.grey,
-                          ),
-                          const SizedBox(height: 18),
-                          Text(
-                            '${widget.nombrePaciente} todavía '
-                            'no tiene historiales médicos registrados.',
-                            textAlign: TextAlign.center,
-                            style: const TextStyle(fontSize: 16),
-                          ),
-                        ],
-                      )
-                    : ListView(
-                        padding: const EdgeInsets.all(18),
-                        children: [
-                          Text(
-                            widget.nombrePaciente,
-                            style: const TextStyle(
-                              fontSize: 23,
-                              fontWeight: FontWeight.bold,
-                              color: Color(0xFF004D40),
-                            ),
-                          ),
-                          const SizedBox(height: 8),
-                          const Text(
-                            'Historial médico autorizado',
-                            style: TextStyle(
-                              color: Colors.green,
-                              fontSize: 14,
-                            ),
-                          ),
-                          const SizedBox(height: 22),
-                          ..._historiales.map(_tarjetaHistorial),
-                        ],
-                      ),
+            ? ListView(
+                padding: const EdgeInsets.all(24),
+                children: [
+                  const SizedBox(height: 80),
+                  const Icon(
+                    Icons.lock_outline,
+                    size: 60,
+                    color: Colors.redAccent,
+                  ),
+                  const SizedBox(height: 18),
+                  Text(_error!, textAlign: TextAlign.center),
+                  const SizedBox(height: 20),
+                  Center(
+                    child: ElevatedButton(
+                      onPressed: _consultarHistorial,
+                      child: const Text('Reintentar'),
+                    ),
+                  ),
+                ],
+              )
+            : _historiales.isEmpty
+            ? ListView(
+                padding: const EdgeInsets.all(24),
+                children: [
+                  const SizedBox(height: 80),
+                  const Icon(
+                    Icons.folder_open_outlined,
+                    size: 65,
+                    color: Colors.grey,
+                  ),
+                  const SizedBox(height: 18),
+                  Text(
+                    '${widget.nombrePaciente} todavía '
+                    'no tiene historiales médicos registrados.',
+                    textAlign: TextAlign.center,
+                    style: const TextStyle(fontSize: 16),
+                  ),
+                ],
+              )
+            : ListView(
+                padding: const EdgeInsets.all(18),
+                children: [
+                  Text(
+                    widget.nombrePaciente,
+                    style: const TextStyle(
+                      fontSize: 23,
+                      fontWeight: FontWeight.bold,
+                      color: Color(0xFF004D40),
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  const Text(
+                    'Historial médico autorizado',
+                    style: TextStyle(color: Colors.green, fontSize: 14),
+                  ),
+                  const SizedBox(height: 22),
+                  ..._historiales.map(_tarjetaHistorial),
+                ],
+              ),
       ),
     );
   }

@@ -1,4 +1,3 @@
-
 import 'package:flutter/material.dart';
 
 import '../../../../../core/storage/secure_session_storage.dart';
@@ -10,8 +9,7 @@ class SessionGateScreen extends StatefulWidget {
   const SessionGateScreen({super.key});
 
   @override
-  State<SessionGateScreen> createState() =>
-      _SessionGateScreenState();
+  State<SessionGateScreen> createState() => _SessionGateScreenState();
 }
 
 class _SessionGateScreenState extends State<SessionGateScreen> {
@@ -47,9 +45,7 @@ class _SessionGateScreenState extends State<SessionGateScreen> {
 
       Navigator.of(context).pushReplacement(
         MaterialPageRoute<void>(
-          builder: (_) => PatientHomeScreen(
-            nombre: nombre,
-          ),
+          builder: (_) => PatientHomeScreen(nombre: nombre),
         ),
       );
     } catch (error) {
@@ -65,9 +61,7 @@ class _SessionGateScreenState extends State<SessionGateScreen> {
     if (!mounted) return;
 
     Navigator.of(context).pushReplacement(
-      MaterialPageRoute<void>(
-        builder: (_) => const WelcomeScreen(),
-      ),
+      MaterialPageRoute<void>(builder: (_) => const WelcomeScreen()),
     );
   }
 
@@ -96,9 +90,7 @@ class _SessionGateScreenState extends State<SessionGateScreen> {
             SizedBox(height: 24),
             CircularProgressIndicator(),
             SizedBox(height: 16),
-            Text(
-              'Verificando tu sesión...',
-            ),
+            Text('Verificando tu sesión...'),
           ],
         ),
       ),

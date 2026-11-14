@@ -149,12 +149,16 @@ class AuthService {
   }
 
   // CERRAR SESIÓN EN EL BACKEND
+
   Future<void> cerrarSesion() async {
     final token = await SecureSessionStorage.obtenerToken();
 
     if (token == null || token.isEmpty) {
-      throw Exception('No se encontró una sesión activa.');
+      await SecureSessionStorage.eliminarToken();
+      return;
     }
+
+    bool cierreConfirmado = false;
 
     try {
       final respuesta = await http
@@ -167,23 +171,22 @@ class AuthService {
           )
           .timeout(const Duration(seconds: 15));
 
-      if (respuesta.statusCode == 200) {
-        // El backend ya invalidó la sesión.
-        await SecureSessionStorage.eliminarToken();
-        return;
-      }
-
-      if (respuesta.statusCode == 401) {
-        // El servidor ya no reconoce esta sesión.
-        await SecureSessionStorage.eliminarToken();
-        return;
-      }
-
-      throw Exception('No fue posible cerrar la sesión. Intenta nuevamente.');
+      cierreConfirmado =
+          respuesta.statusCode == 200 || respuesta.statusCode == 401;
     } on TimeoutException {
-      throw Exception('El servidor tardó demasiado en responder.');
+      // No se pudo confirmar la invalidación remota.
     } on http.ClientException {
-      throw Exception('No se pudo conectar con el servidor CipherMed.');
+      // No se pudo establecer comunicación con el servidor.
+    } finally {
+      // El usuario deja de utilizar la credencial local.
+      await SecureSessionStorage.eliminarToken();
+    }
+
+    if (!cierreConfirmado) {
+      throw Exception(
+        'Se eliminó la sesión del dispositivo, pero no fue '
+        'posible confirmar su cierre en el servidor.',
+      );
     }
   }
 

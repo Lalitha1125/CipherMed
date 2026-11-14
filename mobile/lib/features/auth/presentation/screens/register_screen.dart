@@ -1,5 +1,5 @@
-
 import 'dart:async';
+
 import 'package:flutter/material.dart';
 
 import '../../../../core/theme/app_theme.dart';
@@ -109,10 +109,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
       final mensaje = error.toString().replaceFirst('Exception: ', '');
 
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(mensaje),
-          backgroundColor: Colors.red.shade700,
-        ),
+        SnackBar(content: Text(mensaje), backgroundColor: Colors.red.shade700),
       );
     } finally {
       if (mounted) {
@@ -124,9 +121,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Crear cuenta'),
-      ),
+      appBar: AppBar(title: const Text('Crear cuenta')),
       body: SafeArea(
         child: SingleChildScrollView(
           padding: const EdgeInsets.all(24),
@@ -173,8 +168,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                     labelText: 'Nombre',
                     prefixIcon: Icon(Icons.person_outline),
                   ),
-                  validator: (v) =>
-                      _validarObligatorio(v, 'tu nombre'),
+                  validator: (v) => _validarObligatorio(v, 'tu nombre'),
                 ),
                 const SizedBox(height: 16),
 
@@ -186,8 +180,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                     labelText: 'Apellido',
                     prefixIcon: Icon(Icons.badge_outlined),
                   ),
-                  validator: (v) =>
-                      _validarObligatorio(v, 'tu apellido'),
+                  validator: (v) => _validarObligatorio(v, 'tu apellido'),
                 ),
                 const SizedBox(height: 16),
 
@@ -206,9 +199,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                     }
 
                     final correo = valor.trim();
-                    final formato = RegExp(
-                      r'^[^@\s]+@[^@\s]+\.[^@\s]+$',
-                    );
+                    final formato = RegExp(r'^[^@\s]+@[^@\s]+\.[^@\s]+$');
 
                     if (!formato.hasMatch(correo)) {
                       return 'Ingresa un correo válido';
@@ -233,8 +224,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                     if (valor == null || valor.trim().isEmpty) {
                       return 'Ingresa tu teléfono';
                     }
-                    if (!RegExp(r'^\d{10}$')
-                        .hasMatch(valor.trim())) {
+                    if (!RegExp(r'^\d{10}$').hasMatch(valor.trim())) {
                       return 'Ingresa un número de 10 dígitos';
                     }
                     return null;
@@ -290,16 +280,14 @@ class _RegisterScreenState extends State<RegisterScreen> {
                   enabled: !_registrando,
                   decoration: InputDecoration(
                     labelText: 'Confirmar contraseña',
-                    prefixIcon:
-                        const Icon(Icons.verified_user_outlined),
+                    prefixIcon: const Icon(Icons.verified_user_outlined),
                     suffixIcon: IconButton(
                       tooltip: 'Mostrar u ocultar confirmación',
                       onPressed: _registrando
                           ? null
                           : () {
                               setState(() {
-                                _mostrarConfirmacion =
-                                    !_mostrarConfirmacion;
+                                _mostrarConfirmacion = !_mostrarConfirmacion;
                               });
                             },
                       icon: Icon(
@@ -323,8 +311,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
                 CheckboxListTile(
                   contentPadding: EdgeInsets.zero,
-                  controlAffinity:
-                      ListTileControlAffinity.leading,
+                  controlAffinity: ListTileControlAffinity.leading,
                   value: _aceptaPrivacidad,
                   onChanged: _registrando
                       ? null
@@ -344,15 +331,12 @@ class _RegisterScreenState extends State<RegisterScreen> {
                 SizedBox(
                   width: double.infinity,
                   child: ElevatedButton(
-                    onPressed:
-                        _registrando ? null : _validarFormulario,
+                    onPressed: _registrando ? null : _validarFormulario,
                     child: _registrando
                         ? const SizedBox(
                             height: 22,
                             width: 22,
-                            child: CircularProgressIndicator(
-                              strokeWidth: 2,
-                            ),
+                            child: CircularProgressIndicator(strokeWidth: 2),
                           )
                         : const Text(
                             'Crear mi cuenta',
@@ -367,9 +351,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                     onPressed: _registrando
                         ? null
                         : () => Navigator.pop(context),
-                    child: const Text(
-                      '¿Ya tienes una cuenta? Volver',
-                    ),
+                    child: const Text('¿Ya tienes una cuenta? Volver'),
                   ),
                 ),
               ],

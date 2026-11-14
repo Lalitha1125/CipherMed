@@ -1,6 +1,14 @@
 
 const { pool } = require('../config/database');
 
+const {
+  obtenerIpSolicitud
+} = require('../services/audit.service');
+
+// ==================================================
+// FUNCIONES INTERNAS
+// ==================================================
+
 // Verificar que el médico exista, esté activo
 // y tenga asignado el rol MEDICO.
 async function existeMedicoActivo(conexion, idMedico) {
@@ -21,6 +29,102 @@ async function existeMedicoActivo(conexion, idMedico) {
   );
 
   return medicos.length > 0;
+}
+
+// Registrar la auditoría dentro de la misma
+// transacción que modifica los permisos.
+async function guardarAuditoriaPermiso(
+  conexion,
+  req,
+  accion,
+  idMedico
+) {
+  await conexion.execute(
+    `INSERT INTO Auditoria
+       (ID_USUARIO, ACCION, IP)
+     VALUES (?, ?, ?)`,
+    [
+      req.usuario.id,
+      `${accion} MEDICO:${idMedico}`,
+      obtenerIpSolicitud(req)
+    ]
+  );
+}
+
+// Ejecutar un cambio de permiso y su auditoría
+// utilizando una única transacción.
+async function ejecutarCambioPermiso({
+  req,
+  res,
+  consulta,
+  parametros,
+  accion,
+  idMedico,
+  mensajeExito,
+  mensajeSinPermiso,
+  estadoSinPermiso = 404,
+  respuesta
+}) {
+  let conexion;
+
+  try {
+    conexion = await pool.getConnection();
+    await conexion.beginTransaction();
+
+    const [resultado] = await conexion.execute(
+      consulta,
+      parametros
+    );
+
+    if (resultado.affectedRows === 0) {
+      await conexion.rollback();
+
+      return res.status(estadoSinPermiso).json({
+        message: mensajeSinPermiso
+      });
+    }
+
+    await guardarAuditoriaPermiso(
+      conexion,
+      req,
+      accion,
+      idMedico
+    );
+
+    await conexion.commit();
+
+    return res.status(200).json({
+      message: mensajeExito,
+      idMedico,
+      ...respuesta
+    });
+
+  } catch (error) {
+    if (conexion) {
+      try {
+        await conexion.rollback();
+      } catch (rollbackError) {
+        console.error(
+          'Error al revertir transacción:',
+          rollbackError.code || rollbackError.message
+        );
+      }
+    }
+
+    console.error(
+      'Error al modificar permiso médico:',
+      error.code || error.message
+    );
+
+    return res.status(500).json({
+      message: 'No fue posible actualizar la autorización médica.'
+    });
+
+  } finally {
+    if (conexion) {
+      conexion.release();
+    }
+  }
 }
 
 // ==================================================
@@ -88,6 +192,13 @@ async function autorizarMedico(req, res) {
       );
     }
 
+    await guardarAuditoriaPermiso(
+      conexion,
+      req,
+      'AUTORIZACION_CONSULTA',
+      idMedico
+    );
+
     await conexion.commit();
 
     return res.status(200).json({
@@ -100,7 +211,12 @@ async function autorizarMedico(req, res) {
     if (conexion) {
       try {
         await conexion.rollback();
-      } catch (_) {}
+      } catch (rollbackError) {
+        console.error(
+          'Error al revertir autorización:',
+          rollbackError.code || rollbackError.message
+        );
+      }
     }
 
     console.error(
@@ -113,7 +229,9 @@ async function autorizarMedico(req, res) {
     });
 
   } finally {
-    if (conexion) conexion.release();
+    if (conexion) {
+      conexion.release();
+    }
   }
 }
 
@@ -189,39 +307,27 @@ async function autorizarRegistroMedico(req, res) {
     });
   }
 
-  try {
-    const [resultado] = await pool.execute(
+  return ejecutarCambioPermiso({
+    req,
+    res,
+    consulta:
       `UPDATE AccesoMedico
        SET PERMISO_REGISTRO = 1
        WHERE ID_USUARIO = ?
          AND ID_MEDICO = ?
          AND PERMISO = 1`,
-      [idPaciente, idMedico]
-    );
-
-    if (resultado.affectedRows === 0) {
-      return res.status(403).json({
-        message:
-          'Primero debes autorizar la consulta médica.'
-      });
-    }
-
-    return res.status(200).json({
-      message: 'Registro médico autorizado correctamente.',
-      idMedico,
+    parametros: [idPaciente, idMedico],
+    accion: 'AUTORIZACION_REGISTRO',
+    idMedico,
+    mensajeExito:
+      'Registro médico autorizado correctamente.',
+    mensajeSinPermiso:
+      'Primero debes autorizar la consulta médica.',
+    estadoSinPermiso: 403,
+    respuesta: {
       permisoRegistro: true
-    });
-
-  } catch (error) {
-    console.error(
-      'Error al autorizar registro médico:',
-      error.code || error.message
-    );
-
-    return res.status(500).json({
-      message: 'No fue posible autorizar el registro médico.'
-    });
-  }
+    }
+  });
 }
 
 // ==================================================
@@ -238,38 +344,26 @@ async function revocarRegistroMedico(req, res) {
     });
   }
 
-  try {
-    const [resultado] = await pool.execute(
+  return ejecutarCambioPermiso({
+    req,
+    res,
+    consulta:
       `UPDATE AccesoMedico
        SET PERMISO_REGISTRO = 0
        WHERE ID_USUARIO = ?
          AND ID_MEDICO = ?
          AND PERMISO_REGISTRO = 1`,
-      [idPaciente, idMedico]
-    );
-
-    if (resultado.affectedRows === 0) {
-      return res.status(404).json({
-        message: 'No se encontró un permiso de registro activo.'
-      });
-    }
-
-    return res.status(200).json({
-      message: 'Permiso de registro revocado correctamente.',
-      idMedico,
+    parametros: [idPaciente, idMedico],
+    accion: 'REVOCACION_REGISTRO',
+    idMedico,
+    mensajeExito:
+      'Permiso de registro revocado correctamente.',
+    mensajeSinPermiso:
+      'No se encontró un permiso de registro activo.',
+    respuesta: {
       permisoRegistro: false
-    });
-
-  } catch (error) {
-    console.error(
-      'Error al revocar registro médico:',
-      error.code || error.message
-    );
-
-    return res.status(500).json({
-      message: 'No fue posible revocar el registro médico.'
-    });
-  }
+    }
+  });
 }
 
 // ==================================================
@@ -277,6 +371,7 @@ async function revocarRegistroMedico(req, res) {
 // ==================================================
 
 async function revocarMedico(req, res) {
+  const idPaciente = req.usuario.id;
   const idMedico = Number(req.params.idMedico);
 
   if (!Number.isSafeInteger(idMedico) || idMedico <= 0) {
@@ -285,40 +380,28 @@ async function revocarMedico(req, res) {
     });
   }
 
-  try {
-    const [resultado] = await pool.execute(
+  return ejecutarCambioPermiso({
+    req,
+    res,
+    consulta:
       `UPDATE AccesoMedico
        SET PERMISO = 0,
            PERMISO_REGISTRO = 0
        WHERE ID_USUARIO = ?
          AND ID_MEDICO = ?
          AND (PERMISO = 1 OR PERMISO_REGISTRO = 1)`,
-      [req.usuario.id, idMedico]
-    );
-
-    if (resultado.affectedRows === 0) {
-      return res.status(404).json({
-        message: 'No se encontró una autorización activa.'
-      });
-    }
-
-    return res.status(200).json({
-      message: 'Autorizaciones revocadas correctamente.',
-      idMedico,
+    parametros: [idPaciente, idMedico],
+    accion: 'REVOCACION_CONSULTA_Y_REGISTRO',
+    idMedico,
+    mensajeExito:
+      'Autorizaciones revocadas correctamente.',
+    mensajeSinPermiso:
+      'No se encontró una autorización activa.',
+    respuesta: {
       permiso: false,
       permisoRegistro: false
-    });
-
-  } catch (error) {
-    console.error(
-      'Error al revocar autorización:',
-      error.code || error.message
-    );
-
-    return res.status(500).json({
-      message: 'No fue posible revocar las autorizaciones.'
-    });
-  }
+    }
+  });
 }
 
 module.exports = {

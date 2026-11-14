@@ -1,9 +1,9 @@
-
 import 'package:flutter/material.dart';
 
 import '../../../../../core/theme/app_theme.dart';
 import '../../data/auth_service.dart';
 import 'otp_verification_screen.dart';
+import 'forgot_password_screen.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -49,44 +49,37 @@ class _LoginScreenState extends State<LoginScreen> {
 
       if (!mounted) return;
 
-      
-if (respuesta['requiereOtp'] == true) {
-  final correo = respuesta['correo'] is String
-      ? respuesta['correo'] as String
-      : _correoController.text.trim().toLowerCase();
+      if (respuesta['requiereOtp'] == true) {
+        final correo = respuesta['correo'] is String
+            ? respuesta['correo'] as String
+            : _correoController.text.trim().toLowerCase();
 
-  // Limpiar la contraseña antes de navegar.
-  _passwordController.clear();
+        // Limpiar la contraseña antes de navegar.
+        _passwordController.clear();
 
-  if (!mounted) return;
+        if (!mounted) return;
 
-  // Abrir la pantalla de verificación OTP.
-  await Navigator.of(context).push(
-    MaterialPageRoute<void>(
-      builder: (context) => OtpVerificationScreen(
-        correo: correo,
-      ),
-    ),
-  );
-} else {
-  ScaffoldMessenger.of(context).showSnackBar(
-    const SnackBar(
-      content: Text(
-        'El servidor devolvió una respuesta '
-        'de autenticación inesperada.',
-      ),
-      backgroundColor: Colors.orange,
-    ),
-  );
-}
-
+        // Abrir la pantalla de verificación OTP.
+        await Navigator.of(context).push(
+          MaterialPageRoute<void>(
+            builder: (context) => OtpVerificationScreen(correo: correo),
+          ),
+        );
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text(
+              'El servidor devolvió una respuesta '
+              'de autenticación inesperada.',
+            ),
+            backgroundColor: Colors.orange,
+          ),
+        );
+      }
     } catch (error) {
       if (!mounted) return;
 
-      final mensaje = error.toString().replaceFirst(
-        'Exception: ',
-        '',
-      );
+      final mensaje = error.toString().replaceFirst('Exception: ', '');
 
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
@@ -107,9 +100,7 @@ if (respuesta['requiereOtp'] == true) {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Iniciar sesión'),
-      ),
+      appBar: AppBar(title: const Text('Iniciar sesión')),
       body: SafeArea(
         child: SingleChildScrollView(
           padding: const EdgeInsets.all(26),
@@ -143,10 +134,7 @@ if (respuesta['requiereOtp'] == true) {
                 const Text(
                   'Ingresa tus credenciales para continuar.',
                   textAlign: TextAlign.center,
-                  style: TextStyle(
-                    color: Colors.black54,
-                    fontSize: 15,
-                  ),
+                  style: TextStyle(color: Colors.black54, fontSize: 15),
                 ),
 
                 const SizedBox(height: 36),
@@ -166,9 +154,8 @@ if (respuesta['requiereOtp'] == true) {
                       return 'Ingresa tu correo electrónico';
                     }
 
-                    if (!RegExp(
-                      r'^[^@\s]+@[^@\s]+\.[^@\s]+$',
-                    ).hasMatch(valor.trim())) {
+                    if (!RegExp(r'^[^@\s]+@[^@\s]+\.[^@\s]+$')
+                        .hasMatch(valor.trim())) {
                       return 'Ingresa un correo válido';
                     }
 
@@ -194,8 +181,7 @@ if (respuesta['requiereOtp'] == true) {
                           ? null
                           : () {
                               setState(() {
-                                _mostrarPassword =
-                                    !_mostrarPassword;
+                                _mostrarPassword = !_mostrarPassword;
                               });
                             },
                       icon: Icon(
@@ -217,25 +203,23 @@ if (respuesta['requiereOtp'] == true) {
                 const SizedBox(height: 12),
 
                 // RECUPERACIÓN DE CONTRASEÑA
+
+                // RECUPERACIÓN DE CONTRASEÑA
                 Align(
                   alignment: Alignment.centerRight,
                   child: TextButton(
                     onPressed: _cargando
                         ? null
                         : () {
-                            ScaffoldMessenger.of(context)
-                                .showSnackBar(
-                              const SnackBar(
-                                content: Text(
-                                  'La recuperación de contraseña '
-                                  'estará disponible próximamente.',
+                            Navigator.of(context).push(
+                              MaterialPageRoute<void>(
+                                builder: (_) => ForgotPasswordScreen(
+                                  correoInicial: _correoController.text.trim(),
                                 ),
                               ),
                             );
                           },
-                    child: const Text(
-                      '¿Olvidaste tu contraseña?',
-                    ),
+                    child: const Text('¿Olvidaste tu contraseña?'),
                   ),
                 ),
 
@@ -248,14 +232,9 @@ if (respuesta['requiereOtp'] == true) {
                       ? const SizedBox(
                           width: 22,
                           height: 22,
-                          child: CircularProgressIndicator(
-                            strokeWidth: 2,
-                          ),
+                          child: CircularProgressIndicator(strokeWidth: 2),
                         )
-                      : const Text(
-                          'Ingresar',
-                          style: TextStyle(fontSize: 16),
-                        ),
+                      : const Text('Ingresar', style: TextStyle(fontSize: 16)),
                 ),
 
                 const SizedBox(height: 28),
@@ -264,10 +243,7 @@ if (respuesta['requiereOtp'] == true) {
                   child: Text(
                     'Tu información médica merece protección.',
                     textAlign: TextAlign.center,
-                    style: TextStyle(
-                      color: Colors.black54,
-                      fontSize: 13,
-                    ),
+                    style: TextStyle(color: Colors.black54, fontSize: 13),
                   ),
                 ),
               ],

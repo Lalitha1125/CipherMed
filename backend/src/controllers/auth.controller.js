@@ -1,3 +1,4 @@
+
 const bcrypt = require('bcryptjs');
 const crypto = require('node:crypto');
 const { pool } = require('../config/database');
@@ -7,10 +8,12 @@ const OTP_DURACION_MINUTOS = 5;
 const OTP_MAX_INTENTOS = 5;
 const SESION_DURACION_HORAS = 8;
 
+// GENERAR CÓDIGO OTP DE SEIS DÍGITOS
 function generarCodigoOtp() {
   return crypto.randomInt(0, 1000000).toString().padStart(6, '0');
 }
 
+// PROTEGER EL CÓDIGO OTP CON HMAC-SHA256
 function obtenerHashOtp(idUsuario, codigo) {
   const secreto = process.env.OTP_SECRET;
 
@@ -24,11 +27,11 @@ function obtenerHashOtp(idUsuario, codigo) {
     .digest('hex');
 }
 
+// GENERAR TOKEN SEGURO PARA LA SESIÓN
 function generarTokenSesion() {
-  // Token aleatorio criptográficamente seguro.
   const token = crypto.randomBytes(32).toString('hex');
 
-  // Guardamos solamente su hash en MySQL.
+  // En MySQL se almacena únicamente el hash del token.
   const tokenHash = crypto
     .createHash('sha256')
     .update(token)
@@ -40,6 +43,9 @@ function generarTokenSesion() {
   };
 }
 
+// =====================================================
+// 1. REGISTRAR PACIENTE
+// =====================================================
 
 async function registrarPaciente(req, res) {
   const {
@@ -79,7 +85,8 @@ async function registrarPaciente(req, res) {
         telefono.length > 20))
   ) {
     return res.status(400).json({
-      message: 'Revisa el correo, los datos y la contraseña (mínimo 12 caracteres).'
+      message:
+        'Revisa el correo, los datos y la contraseña (mínimo 12 caracteres).'
     });
   }
 
@@ -160,7 +167,10 @@ async function registrarPaciente(req, res) {
       });
     }
 
-    console.error('Error al registrar paciente:', error.code || error.message);
+    console.error(
+      'Error al registrar paciente:',
+      error.code || error.message
+    );
 
     return res.status(500).json({
       message: 'No fue posible completar el registro.'
@@ -170,6 +180,9 @@ async function registrarPaciente(req, res) {
   }
 }
 
+// =====================================================
+// 2. INICIAR SESIÓN
+// =====================================================
 
 async function iniciarSesion(req, res) {
   const { correo, password } = req.body || {};
@@ -201,7 +214,7 @@ async function iniciarSesion(req, res) {
               PASSWORD_HASH, ESTADO
        FROM Usuario
        WHERE CORREO = ?
-        AND ESTADO = 'ACTIVO'
+         AND ESTADO = 'ACTIVO'
        LIMIT 1`,
       [correoLimpio]
     );
@@ -224,18 +237,16 @@ async function iniciarSesion(req, res) {
         message: 'Correo o contraseña incorrectos.'
       });
     }
+
     if (usuario.ESTADO !== 'ACTIVO') {
-  return res.status(403).json({
-    message: 'Esta cuenta no se encuentra activa.'
-  });
-}
+      return res.status(403).json({
+        message: 'Esta cuenta no se encuentra activa.'
+      });
+    }
 
-    // Consultar el estado de la cuenta antes de permitir
-    // la autenticación.
-    // La interpretación exacta de ESTADO se revisará
-    // con el esquema de la tabla Usuario.
-
+    // Generar el código OTP.
     const codigo = generarCodigoOtp();
+
     const codigoHash = obtenerHashOtp(
       usuario.ID_USUARIO,
       codigo
@@ -245,7 +256,7 @@ async function iniciarSesion(req, res) {
 
     await conexion.beginTransaction();
 
-    // Invalidar los códigos anteriores de este usuario.
+    // Invalidar los códigos OTP anteriores.
     await conexion.execute(
       `UPDATE OTP
        SET USADO = 1
@@ -253,20 +264,26 @@ async function iniciarSesion(req, res) {
       [usuario.ID_USUARIO]
     );
 
+    // Registrar el nuevo código OTP.
     await conexion.execute(
       `INSERT INTO OTP
        (ID_USUARIO, CODIGO, FECHA_EXPIRACION,
         USADO, INTENTOS_FALLIDOS)
        VALUES (
          ?, ?,
-         DATE_ADD(NOW(), INTERVAL 5 MINUTE),
+         DATE_ADD(NOW(), INTERVAL ? MINUTE),
          0, 0
        )`,
-      [usuario.ID_USUARIO, codigoHash]
+      [
+        usuario.ID_USUARIO,
+        codigoHash,
+        OTP_DURACION_MINUTOS
+      ]
     );
 
     await conexion.commit();
 
+    // Enviar OTP al correo registrado.
     await enviarOtp(usuario.CORREO, codigo);
 
     return res.status(200).json({
@@ -274,7 +291,6 @@ async function iniciarSesion(req, res) {
       requiereOtp: true,
       correo: usuario.CORREO
     });
-
   } catch (error) {
     if (conexion) {
       try {
@@ -295,6 +311,9 @@ async function iniciarSesion(req, res) {
   }
 }
 
+// =====================================================
+// 3. VERIFICAR CÓDIGO OTP
+// =====================================================
 
 async function verificarOtp(req, res) {
   const { correo, codigo } = req.body || {};
@@ -324,16 +343,18 @@ async function verificarOtp(req, res) {
 
   try {
     conexion = await pool.getConnection();
+
     await conexion.beginTransaction();
 
+    // Consultar el usuario activo.
     const [usuarios] = await conexion.execute(
-  `SELECT ID_USUARIO
-   FROM Usuario
-   WHERE CORREO = ?
-     AND ESTADO = 'ACTIVO'
-   LIMIT 1`,
-  [correoLimpio]
-);
+      `SELECT ID_USUARIO
+       FROM Usuario
+       WHERE CORREO = ?
+         AND ESTADO = 'ACTIVO'
+       LIMIT 1`,
+      [correoLimpio]
+    );
 
     if (usuarios.length === 0) {
       await conexion.rollback();
@@ -345,6 +366,7 @@ async function verificarOtp(req, res) {
 
     const idUsuario = usuarios[0].ID_USUARIO;
 
+    // Consultar el último OTP disponible.
     const [registros] = await conexion.execute(
       `SELECT ID_OTP, CODIGO, INTENTOS_FALLIDOS,
               FECHA_EXPIRACION
@@ -367,6 +389,7 @@ async function verificarOtp(req, res) {
 
     const otp = registros[0];
 
+    // Comprobar que el OTP no haya vencido.
     const [vigencia] = await conexion.execute(
       `SELECT
          (FECHA_EXPIRACION > NOW()) AS VIGENTE
@@ -388,6 +411,7 @@ async function verificarOtp(req, res) {
       });
     }
 
+    // Limitar los intentos fallidos.
     if (otp.INTENTOS_FALLIDOS >= OTP_MAX_INTENTOS) {
       await conexion.execute(
         'UPDATE OTP SET USADO = 1 WHERE ID_OTP = ?',
@@ -401,6 +425,7 @@ async function verificarOtp(req, res) {
       });
     }
 
+    // Comparar el código de forma segura.
     const hashIngresado = obtenerHashOtp(
       idUsuario,
       codigo
@@ -429,69 +454,79 @@ async function verificarOtp(req, res) {
         message: 'Código incorrecto o vencido.'
       });
     }
-    // Consultar el rol asignado al usuario autenticado.
-const [roles] = await conexion.execute(
-  `SELECT r.NOMBRE_ROL
-   FROM Usuario_Rol ur
-   INNER JOIN Rol r
-     ON r.ID_ROL = ur.ID_ROL
-   WHERE ur.ID_USUARIO = ?`,
-  [idUsuario]
-);
 
-// Por ahora CipherMed permite un único rol principal
-// por cuenta: PACIENTE o MEDICO.
-if (
+    // =================================================
+    // 4. IDENTIFICAR EL ROL DEL USUARIO
+    // =================================================
+
+    const [roles] = await conexion.execute(
+      `SELECT r.NOMBRE_ROL
+       FROM Usuario_Rol ur
+       INNER JOIN Rol r
+         ON r.ID_ROL = ur.ID_ROL
+       WHERE ur.ID_USUARIO = ?`,
+      [idUsuario]
+    );
+
+    // CipherMed permite tres roles principales:
+    // PACIENTE, MEDICO y ADMIN.
+    // Cada usuario debe tener exactamente un rol.
+
+    if (
   roles.length !== 1 ||
-  !['PACIENTE', 'MEDICO'].includes(roles[0].NOMBRE_ROL)
+  !['PACIENTE', 'MEDICO', 'ADMINISTRADOR'].includes(
+    roles[0].NOMBRE_ROL
+  )
 ) {
-  await conexion.rollback();
+      await conexion.rollback();
 
-  return res.status(403).json({
-    message: 'La cuenta no tiene un rol válido para iniciar sesión.'
-  });
-}
+      return res.status(403).json({
+        message:
+          'La cuenta no tiene un rol válido para iniciar sesión.'
+      });
+    }
 
-const rolUsuario = roles[0].NOMBRE_ROL;
+    const rolUsuario = roles[0].NOMBRE_ROL;
 
-    
-    // Marcar el código OTP como utilizado.
+    // Marcar el OTP como utilizado.
     await conexion.execute(
       'UPDATE OTP SET USADO = 1 WHERE ID_OTP = ?',
       [otp.ID_OTP]
     );
 
-    // Generar un token de sesión seguro.
+    // Generar el token de sesión.
     const { token, tokenHash } = generarTokenSesion();
 
-    // Registrar la sesión autenticada en MySQL.
+    // Guardar la sesión en MySQL.
     await conexion.execute(
       `INSERT INTO Sesion
        (ID_USUARIO, TOKEN, FECHA_INICIO, FECHA_FIN)
        VALUES (
          ?, ?, NOW(),
-         DATE_ADD(NOW(), INTERVAL 8 HOUR)
+         DATE_ADD(NOW(), INTERVAL ? HOUR)
        )`,
-      [idUsuario, tokenHash]
+      [
+        idUsuario,
+        tokenHash,
+        SESION_DURACION_HORAS
+      ]
     );
 
-    // Confirmar conjuntamente el uso del OTP y la sesión.
+    // Confirmar el OTP y la sesión.
     await conexion.commit();
 
     return res.status(200).json({
-  message: 'Autenticación completada correctamente.',
-  otpVerificado: true,
-  autenticado: true,
-  usuario: {
-    id: idUsuario,
-    rol: rolUsuario
-  },
-  token: token,
-  tipoToken: 'Bearer',
-  expiraEnSegundos: SESION_DURACION_HORAS * 60 * 60
-});
-
-
+      message: 'Autenticación completada correctamente.',
+      otpVerificado: true,
+      autenticado: true,
+      usuario: {
+        id: idUsuario,
+        rol: rolUsuario
+      },
+      token: token,
+      tipoToken: 'Bearer',
+      expiraEnSegundos: SESION_DURACION_HORAS * 60 * 60
+    });
   } catch (error) {
     if (conexion) {
       try {
@@ -512,6 +547,9 @@ const rolUsuario = roles[0].NOMBRE_ROL;
   }
 }
 
+// =====================================================
+// 5. CERRAR SESIÓN
+// =====================================================
 
 async function cerrarSesion(req, res) {
   try {
@@ -519,7 +557,10 @@ async function cerrarSesion(req, res) {
       `DELETE FROM Sesion
        WHERE ID_SESION = ?
          AND ID_USUARIO = ?`,
-      [req.usuario.idSesion, req.usuario.id]
+      [
+        req.usuario.idSesion,
+        req.usuario.id
+      ]
     );
 
     if (resultado.affectedRows === 0) {
@@ -543,6 +584,9 @@ async function cerrarSesion(req, res) {
   }
 }
 
+// =====================================================
+// 6. EXPORTAR FUNCIONES
+// =====================================================
 
 module.exports = {
   registrarPaciente,

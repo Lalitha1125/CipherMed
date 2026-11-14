@@ -5,22 +5,18 @@ import '../../../../../core/storage/secure_session_storage.dart';
 import '../../data/auth_service.dart';
 import '../../../patient/presentation/screens/patient_home_screen.dart';
 import '../../../doctor/presentation/screens/doctor_home_screen.dart';
+import '../../../admin/presentation/screens/admin_home_screen.dart';
 
 class OtpVerificationScreen extends StatefulWidget {
   final String correo;
 
-  const OtpVerificationScreen({
-    super.key,
-    required this.correo,
-  });
+  const OtpVerificationScreen({super.key, required this.correo});
 
   @override
-  State<OtpVerificationScreen> createState() =>
-      _OtpVerificationScreenState();
+  State<OtpVerificationScreen> createState() => _OtpVerificationScreenState();
 }
 
-class _OtpVerificationScreenState
-    extends State<OtpVerificationScreen> {
+class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
   final _codigoController = TextEditingController();
   final _authService = AuthService();
 
@@ -32,162 +28,141 @@ class _OtpVerificationScreenState
     super.dispose();
   }
 
-  
-Future<void> _verificarCodigo() async {
-  final codigo = _codigoController.text.trim();
+  Future<void> _verificarCodigo() async {
+    final codigo = _codigoController.text.trim();
 
-  if (_verificando) return;
+    if (_verificando) return;
 
-  if (!RegExp(r'^\d{6}$').hasMatch(codigo)) {
-    _mostrarMensaje(
-      'Ingresa los seis dígitos del código.',
-      esError: true,
-    );
-    return;
-  }
-
-  setState(() {
-    _verificando = true;
-  });
-
-  try {
-    // 1. Verificar el OTP en el backend.
-    final respuesta = await _authService.verificarOtp(
-      correo: widget.correo,
-      codigo: codigo,
-    );
-
-    if (!mounted) return;
-
-    // 2. Comprobar que la autenticación fue completada.
-    if (respuesta['otpVerificado'] != true ||
-        respuesta['autenticado'] != true) {
-      _mostrarMensaje(
-        'No fue posible completar la autenticación.',
-        esError: true,
-      );
+    if (!RegExp(r'^\d{6}$').hasMatch(codigo)) {
+      _mostrarMensaje('Ingresa los seis dígitos del código.', esError: true);
       return;
     }
 
-    final token = respuesta['token'];
+    setState(() {
+      _verificando = true;
+    });
 
-    if (token is! String ||
-        !RegExp(r'^[a-fA-F0-9]{64}$').hasMatch(token)) {
-      _mostrarMensaje(
-        'El servidor no devolvió una sesión válida.',
-        esError: true,
+    try {
+      // 1. VERIFICAR EL OTP CON EL SERVIDOR
+      final respuesta = await _authService.verificarOtp(
+        correo: widget.correo,
+        codigo: codigo,
       );
-      return;
-    }
 
-    // 3. Guardar el token en almacenamiento seguro.
-    await SecureSessionStorage.guardarToken(token);
+      if (!mounted) return;
 
-    // 4. Comprobar que el backend reconoce la sesión.
-    final perfil = await _authService.obtenerPerfil();
+      if (respuesta['otpVerificado'] != true ||
+          respuesta['autenticado'] != true) {
+        throw Exception('No fue posible completar la autenticación.');
+      }
 
-    if (!mounted) return;
+      // 2. VALIDAR EL TOKEN
+      final token = respuesta['token'];
 
-    final usuario = perfil['usuario'];
+      if (token is! String || !RegExp(r'^[a-fA-F0-9]{64}$').hasMatch(token)) {
+        throw Exception('El servidor no devolvió una sesión válida.');
+      }
 
-    if (usuario is! Map<String, dynamic>) {
-      throw Exception(
-        'El servidor no devolvió un perfil válido.',
-      );
-    }
+      // 3. GUARDAR LA SESIÓN
+      await SecureSessionStorage.guardarToken(token);
 
-    final nombre = usuario['nombre'] is String
-    ? usuario['nombre'] as String
-    : 'Usuario';
+      // 4. CONSULTAR EL PERFIL AUTENTICADO
+      final perfil = await _authService.obtenerPerfil();
 
-final rolOtp = respuesta['usuario'];
+      if (!mounted) return;
 
-final rol = rolOtp is Map
-    ? rolOtp['rol']
-    : null;
+      final usuario = perfil['usuario'];
 
-if (rol != 'PACIENTE' && rol != 'MEDICO') {
-  throw Exception(
-    'El servidor no devolvió un rol válido.',
-  );
-}
+      if (usuario is! Map<String, dynamic>) {
+        throw Exception('El servidor no devolvió un perfil válido.');
+      }
 
-    // 5. Limpiar el código de la pantalla.
-    _codigoController.clear();
+      final nombre = usuario['nombre'] is String
+          ? usuario['nombre'] as String
+          : 'Usuario';
 
-    // 6. Mostrar la confirmación.
-    await showDialog<void>(
-      context: context,
-      barrierDismissible: false,
-      builder: (dialogContext) => AlertDialog(
-        title: const Text('Inicio de sesión exitoso'),
-        content: Text(
-          '¡Hola, $nombre! Bienvenido a CipherMed.\n\n'
-          'Tu identidad fue verificada correctamente '
-          'y tu sesión segura está activa.',
-        ),
-        actions: [
-          TextButton(
-            onPressed: () {
-              Navigator.of(dialogContext).pop();
-            },
-            child: const Text('Aceptar'),
+      // 5. IDENTIFICAR EL ROL
+      final rolOtp = respuesta['usuario'];
+
+      final rol = rolOtp is Map ? rolOtp['rol'] : null;
+
+      if (rol != 'PACIENTE' && rol != 'MEDICO' && rol != 'ADMINISTRADOR') {
+        throw Exception('El servidor no devolvió un rol válido.');
+      }
+
+      // 6. SELECCIONAR EL MENÚ SEGÚN EL ROL
+      final Widget pantallaPrincipal;
+
+      switch (rol) {
+        case 'MEDICO':
+          pantallaPrincipal = const DoctorHomeScreen();
+          break;
+
+        case 'ADMINISTRADOR':
+          pantallaPrincipal = const AdminHomeScreen();
+          break;
+
+        case 'PACIENTE':
+          pantallaPrincipal = PatientHomeScreen(nombre: nombre);
+          break;
+
+        default:
+          throw Exception('El rol del usuario no está autorizado.');
+      }
+
+      // 7. LIMPIAR EL CÓDIGO
+      _codigoController.clear();
+
+      // 8. MOSTRAR CONFIRMACIÓN
+      await showDialog<void>(
+        context: context,
+        barrierDismissible: false,
+        builder: (dialogContext) => AlertDialog(
+          title: const Text('Inicio de sesión exitoso'),
+          content: Text(
+            '¡Hola, $nombre! Bienvenido a CipherMed.\n\n'
+            'Tu identidad fue verificada correctamente '
+            'y tu sesión segura está activa.',
           ),
-        ],
-      ),
-    );
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.of(dialogContext).pop();
+              },
+              child: const Text('Aceptar'),
+            ),
+          ],
+        ),
+      );
 
-   
-if (!mounted) return;
+      if (!mounted) return;
 
-// Seleccionar la pantalla según el rol autenticado.
-final Widget pantallaPrincipal;
+      // 9. ABRIR EL MENÚ CORRESPONDIENTE
+      Navigator.of(context).pushAndRemoveUntil(
+        MaterialPageRoute<void>(builder: (_) => pantallaPrincipal),
+        (route) => false,
+      );
+    } catch (error) {
+      if (!mounted) return;
 
-if (rol == 'MEDICO') {
-  pantallaPrincipal = const DoctorHomeScreen();
-} else {
-  pantallaPrincipal = PatientHomeScreen(
-    nombre: nombre,
-  );
-}
-
-// Evitar regresar al inicio de sesión
-// mediante el botón de retroceso.
-Navigator.of(context).pushAndRemoveUntil(
-  MaterialPageRoute<void>(
-    builder: (_) => pantallaPrincipal,
-  ),
-  (route) => false,
-);
-
-  } catch (error) {
-    if (!mounted) return;
-
-    final mensaje = error.toString().replaceFirst(
-      'Exception: ',
-      '',
-    );
-
-    _mostrarMensaje(mensaje, esError: true);
-  } finally {
-    if (mounted) {
-      setState(() {
-        _verificando = false;
-      });
+      _mostrarMensaje(
+        error.toString().replaceFirst('Exception: ', ''),
+        esError: true,
+      );
+    } finally {
+      if (mounted) {
+        setState(() {
+          _verificando = false;
+        });
+      }
     }
   }
-}
 
-
-  void _mostrarMensaje(
-    String mensaje, {
-    bool esError = false,
-  }) {
+  void _mostrarMensaje(String mensaje, {bool esError = false}) {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(mensaje),
-        backgroundColor:
-            esError ? Colors.redAccent : const Color(0xFF006D80),
+        backgroundColor: esError ? Colors.redAccent : const Color(0xFF006D80),
       ),
     );
   }
@@ -198,11 +173,13 @@ Navigator.of(context).pushAndRemoveUntil(
 
     return Scaffold(
       backgroundColor: const Color(0xFFF4FAFC),
+
       appBar: AppBar(
         title: const Text('Verificación OTP'),
         centerTitle: true,
         backgroundColor: const Color(0xFFF4FAFC),
       ),
+
       body: SafeArea(
         child: Center(
           child: SingleChildScrollView(
@@ -219,7 +196,9 @@ Navigator.of(context).pushAndRemoveUntil(
                     color: colorPrincipal,
                   ),
                 ),
+
                 const SizedBox(height: 28),
+
                 const Text(
                   'Verifica tu identidad',
                   textAlign: TextAlign.center,
@@ -229,16 +208,17 @@ Navigator.of(context).pushAndRemoveUntil(
                     color: Color(0xFF143A52),
                   ),
                 ),
+
                 const SizedBox(height: 12),
+
                 const Text(
                   'Enviamos un código de seis dígitos a:',
                   textAlign: TextAlign.center,
-                  style: TextStyle(
-                    fontSize: 15,
-                    color: Colors.black54,
-                  ),
+                  style: TextStyle(fontSize: 15, color: Colors.black54),
                 ),
+
                 const SizedBox(height: 8),
+
                 Text(
                   widget.correo,
                   textAlign: TextAlign.center,
@@ -247,7 +227,9 @@ Navigator.of(context).pushAndRemoveUntil(
                     color: colorPrincipal,
                   ),
                 ),
+
                 const SizedBox(height: 32),
+
                 TextField(
                   controller: _codigoController,
                   enabled: !_verificando,
@@ -261,9 +243,7 @@ Navigator.of(context).pushAndRemoveUntil(
                   decoration: InputDecoration(
                     labelText: 'Código de verificación',
                     hintText: '000000',
-                    prefixIcon: const Icon(
-                      Icons.lock_outline,
-                    ),
+                    prefixIcon: const Icon(Icons.lock_outline),
                     counterText: '',
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(14),
@@ -275,22 +255,22 @@ Navigator.of(context).pushAndRemoveUntil(
                     }
                   },
                 ),
+
                 const SizedBox(height: 12),
+
                 const Text(
                   'El código vence en cinco minutos.',
                   textAlign: TextAlign.center,
-                  style: TextStyle(
-                    fontSize: 13,
-                    color: Colors.black54,
-                  ),
+                  style: TextStyle(fontSize: 13, color: Colors.black54),
                 ),
+
                 const SizedBox(height: 28),
+
                 SizedBox(
                   width: double.infinity,
                   height: 52,
                   child: ElevatedButton(
-                    onPressed:
-                        _verificando ? null : _verificarCodigo,
+                    onPressed: _verificando ? null : _verificarCodigo,
                     style: ElevatedButton.styleFrom(
                       backgroundColor: colorPrincipal,
                       foregroundColor: Colors.white,
@@ -316,14 +296,16 @@ Navigator.of(context).pushAndRemoveUntil(
                           ),
                   ),
                 ),
+
                 const SizedBox(height: 18),
+
                 TextButton(
                   onPressed: _verificando
                       ? null
-                      : () => Navigator.of(context).pop(),
-                  child: const Text(
-                    'Volver al inicio de sesión',
-                  ),
+                      : () {
+                          Navigator.of(context).pop();
+                        },
+                  child: const Text('Volver al inicio de sesión'),
                 ),
               ],
             ),
