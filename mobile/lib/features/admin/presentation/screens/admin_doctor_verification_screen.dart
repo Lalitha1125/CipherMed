@@ -1,4 +1,3 @@
-
 import 'package:flutter/material.dart';
 
 import '../../../../core/theme/app_theme.dart';
@@ -61,14 +60,11 @@ class _AdminDoctorVerificationScreenState
   }) async {
     if (_procesando) return;
 
-    final idVerificacion =
-        int.tryParse('${medico['idVerificacion']}');
+    final idVerificacion = int.tryParse('${medico['idVerificacion']}');
 
     if (idVerificacion == null || idVerificacion <= 0) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('La solicitud no es válida.'),
-        ),
+        const SnackBar(content: Text('La solicitud no es válida.')),
       );
       return;
     }
@@ -87,25 +83,20 @@ class _AdminDoctorVerificationScreenState
         context: context,
         builder: (dialogContext) {
           return AlertDialog(
-            title: Text(
-              aprobar
-                  ? 'Aprobar médico'
-                  : 'Rechazar registro',
-            ),
+            title: Text(aprobar ? 'Aprobar médico' : 'Rechazar registro'),
             content: SingleChildScrollView(
               child: Form(
                 key: formKey,
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment:
-                      CrossAxisAlignment.start,
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
                       aprobar
                           ? '¿Deseas aprobar el registro de $nombre? '
-                            'Su cuenta quedará activa.'
+                                'Su cuenta quedará activa.'
                           : '¿Deseas rechazar el registro de $nombre? '
-                            'Su cuenta permanecerá inactiva.',
+                                'Su cuenta permanecerá inactiva.',
                     ),
                     const SizedBox(height: 18),
                     TextFormField(
@@ -113,17 +104,14 @@ class _AdminDoctorVerificationScreenState
                       maxLines: 3,
                       maxLength: 500,
                       decoration: const InputDecoration(
-                        labelText:
-                            'Observación administrativa',
-                        hintText:
-                            'Explica el motivo de la decisión',
+                        labelText: 'Observación administrativa',
+                        hintText: 'Explica el motivo de la decisión',
                         border: OutlineInputBorder(),
                       ),
                       validator: (valor) {
                         final texto = valor?.trim() ?? '';
 
-                        if (texto.length < 10 ||
-                            texto.length > 500) {
+                        if (texto.length < 10 || texto.length > 500) {
                           return 'Escribe entre 10 y 500 caracteres.';
                         }
 
@@ -152,9 +140,7 @@ class _AdminDoctorVerificationScreenState
                       ? AppTheme.primary
                       : Colors.red.shade700,
                 ),
-                child: Text(
-                  aprobar ? 'Aprobar' : 'Rechazar',
-                ),
+                child: Text(aprobar ? 'Aprobar' : 'Rechazar'),
               ),
             ],
           );
@@ -177,10 +163,7 @@ class _AdminDoctorVerificationScreenState
         if (!mounted) return;
 
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(mensaje),
-            backgroundColor: AppTheme.primary,
-          ),
+          SnackBar(content: Text(mensaje), backgroundColor: AppTheme.primary),
         );
 
         _actualizar();
@@ -189,12 +172,7 @@ class _AdminDoctorVerificationScreenState
 
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(
-              error.toString().replaceFirst(
-                'Exception: ',
-                '',
-              ),
-            ),
+            content: Text(error.toString().replaceFirst('Exception: ', '')),
             backgroundColor: Colors.red.shade700,
           ),
         );
@@ -214,16 +192,12 @@ class _AdminDoctorVerificationScreenState
     }
   }
 
-  Widget _tarjetaMedico(
-    Map<String, dynamic> medico,
-  ) {
+  Widget _tarjetaMedico(Map<String, dynamic> medico) {
     final nombre =
         '${_texto(medico['nombre'])} '
         '${_texto(medico['apellido'])}';
 
-    final estado =
-        '${medico['estado'] ?? 'PENDIENTE'}'
-            .toUpperCase();
+    final estado = '${medico['estado'] ?? 'PENDIENTE'}'.toUpperCase();
 
     final pendiente = estado == 'PENDIENTE';
 
@@ -233,15 +207,12 @@ class _AdminDoctorVerificationScreenState
       margin: const EdgeInsets.only(bottom: 14),
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(18),
-        side: const BorderSide(
-          color: Color(0xFFE0EBEF),
-        ),
+        side: const BorderSide(color: Color(0xFFE0EBEF)),
       ),
       child: Padding(
         padding: const EdgeInsets.all(18),
         child: Column(
-          crossAxisAlignment:
-              CrossAxisAlignment.start,
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Row(
               children: [
@@ -268,9 +239,7 @@ class _AdminDoctorVerificationScreenState
 
             const SizedBox(height: 16),
 
-            Text(
-              'Correo: ${_texto(medico['correo'])}',
-            ),
+            Text('Correo: ${_texto(medico['correo'])}'),
 
             const SizedBox(height: 8),
 
@@ -326,14 +295,9 @@ class _AdminDoctorVerificationScreenState
                       onPressed: _procesando
                           ? null
                           : () {
-                              _revisar(
-                                medico: medico,
-                                decision: 'RECHAZADA',
-                              );
+                              _revisar(medico: medico, decision: 'RECHAZADA');
                             },
-                      icon: const Icon(
-                        Icons.close_rounded,
-                      ),
+                      icon: const Icon(Icons.close_rounded),
                       label: const Text('Rechazar'),
                     ),
                   ),
@@ -345,18 +309,12 @@ class _AdminDoctorVerificationScreenState
                       onPressed: _procesando
                           ? null
                           : () {
-                              _revisar(
-                                medico: medico,
-                                decision: 'APROBADA',
-                              );
+                              _revisar(medico: medico, decision: 'APROBADA');
                             },
-                      icon: const Icon(
-                        Icons.check_rounded,
-                      ),
+                      icon: const Icon(Icons.check_rounded),
                       label: const Text('Aprobar'),
                       style: ElevatedButton.styleFrom(
-                        backgroundColor:
-                            AppTheme.primary,
+                        backgroundColor: AppTheme.primary,
                         foregroundColor: Colors.white,
                       ),
                     ),
@@ -377,32 +335,23 @@ class _AdminDoctorVerificationScreenState
       appBar: AppBar(
         title: const Text(
           'Verificar médicos',
-          style: TextStyle(
-            fontWeight: FontWeight.bold,
-          ),
+          style: TextStyle(fontWeight: FontWeight.bold),
         ),
         centerTitle: true,
         backgroundColor: const Color(0xFFE0F2F5),
         actions: [
           IconButton(
             tooltip: 'Actualizar',
-            onPressed: _procesando
-                ? null
-                : _actualizar,
-            icon: const Icon(
-              Icons.refresh_rounded,
-            ),
+            onPressed: _procesando ? null : _actualizar,
+            icon: const Icon(Icons.refresh_rounded),
           ),
         ],
       ),
       body: FutureBuilder<List<Map<String, dynamic>>>(
         future: _verificaciones,
         builder: (context, snapshot) {
-          if (snapshot.connectionState ==
-              ConnectionState.waiting) {
-            return const Center(
-              child: CircularProgressIndicator(),
-            );
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return const Center(child: CircularProgressIndicator());
           }
 
           if (snapshot.hasError) {
@@ -419,10 +368,7 @@ class _AdminDoctorVerificationScreenState
                     ),
                     const SizedBox(height: 12),
                     Text(
-                      snapshot.error.toString().replaceFirst(
-                        'Exception: ',
-                        '',
-                      ),
+                      snapshot.error.toString().replaceFirst('Exception: ', ''),
                       textAlign: TextAlign.center,
                     ),
                     const SizedBox(height: 16),
@@ -436,8 +382,7 @@ class _AdminDoctorVerificationScreenState
             );
           }
 
-          final verificaciones =
-              snapshot.data ?? [];
+          final verificaciones = snapshot.data ?? [];
 
           if (verificaciones.isEmpty) {
             return const Center(
@@ -477,8 +422,7 @@ class _AdminDoctorVerificationScreenState
 
                 const SizedBox(height: 20),
 
-                for (final medico in verificaciones)
-                  _tarjetaMedico(medico),
+                for (final medico in verificaciones) _tarjetaMedico(medico),
               ],
             ),
           );

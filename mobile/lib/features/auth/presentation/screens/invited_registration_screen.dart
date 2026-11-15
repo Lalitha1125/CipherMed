@@ -1,4 +1,3 @@
-
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
@@ -13,8 +12,7 @@ class InvitedRegistrationScreen extends StatefulWidget {
       _InvitedRegistrationScreenState();
 }
 
-class _InvitedRegistrationScreenState
-    extends State<InvitedRegistrationScreen> {
+class _InvitedRegistrationScreenState extends State<InvitedRegistrationScreen> {
   final _formKey = GlobalKey<FormState>();
 
   final _correoController = TextEditingController();
@@ -57,26 +55,20 @@ class _InvitedRegistrationScreenState
     return null;
   }
 
-  InputDecoration _decoracion(
-    String etiqueta,
-    IconData icono,
-  ) {
+  InputDecoration _decoracion(String etiqueta, IconData icono) {
     return InputDecoration(
       labelText: etiqueta,
       prefixIcon: Icon(icono),
       filled: true,
       fillColor: Colors.white,
-      border: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(14),
-      ),
+      border: OutlineInputBorder(borderRadius: BorderRadius.circular(14)),
     );
   }
 
   Future<void> _registrar() async {
     FocusScope.of(context).unfocus();
 
-    if (_cargando ||
-        !_formKey.currentState!.validate()) {
+    if (_cargando || !_formKey.currentState!.validate()) {
       return;
     }
 
@@ -91,8 +83,7 @@ class _InvitedRegistrationScreenState
         nombre: _nombreController.text,
         apellido: _apellidoController.text,
         password: _passwordController.text,
-        confirmarPassword:
-            _confirmarPasswordController.text,
+        confirmarPassword: _confirmarPasswordController.text,
         telefono: _telefonoController.text,
         especialidad: _especialidadController.text,
         numeroLicencia: _licenciaController.text,
@@ -131,9 +122,7 @@ class _InvitedRegistrationScreenState
     } catch (error) {
       if (!mounted) return;
 
-      final mensaje = error
-          .toString()
-          .replaceFirst('Exception: ', '');
+      final mensaje = error.toString().replaceFirst('Exception: ', '');
 
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
@@ -166,15 +155,13 @@ class _InvitedRegistrationScreenState
           child: Form(
             key: _formKey,
             child: Column(
-              crossAxisAlignment:
-                  CrossAxisAlignment.stretch,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 Container(
                   padding: const EdgeInsets.all(24),
                   decoration: BoxDecoration(
                     color: AppTheme.primary,
-                    borderRadius:
-                        BorderRadius.circular(20),
+                    borderRadius: BorderRadius.circular(20),
                   ),
                   child: const Column(
                     children: [
@@ -199,9 +186,7 @@ class _InvitedRegistrationScreenState
                         'el código de invitación '
                         'que recibiste por correo.',
                         textAlign: TextAlign.center,
-                        style: TextStyle(
-                          color: Colors.white,
-                        ),
+                        style: TextStyle(color: Colors.white),
                       ),
                     ],
                   ),
@@ -212,8 +197,7 @@ class _InvitedRegistrationScreenState
                 TextFormField(
                   controller: _correoController,
                   enabled: !_cargando,
-                  keyboardType:
-                      TextInputType.emailAddress,
+                  keyboardType: TextInputType.emailAddress,
                   autocorrect: false,
                   decoration: _decoracion(
                     'Correo electrónico',
@@ -222,9 +206,8 @@ class _InvitedRegistrationScreenState
                   validator: (valor) {
                     final correo = valor?.trim() ?? '';
 
-                    if (!RegExp(
-                      r'^[^\s@]+@[^\s@]+\.[^\s@]+$',
-                    ).hasMatch(correo)) {
+                    if (!RegExp(r'^[^\s@]+@[^\s@]+\.[^\s@]+$')
+                        .hasMatch(correo)) {
                       return 'Ingresa un correo válido.';
                     }
 
@@ -239,17 +222,13 @@ class _InvitedRegistrationScreenState
                   enabled: !_cargando,
                   keyboardType: TextInputType.number,
                   maxLength: 6,
-                  inputFormatters: [
-                    FilteringTextInputFormatter.digitsOnly,
-                  ],
+                  inputFormatters: [FilteringTextInputFormatter.digitsOnly],
                   decoration: _decoracion(
                     'Código de invitación',
                     Icons.password_rounded,
                   ),
                   validator: (valor) {
-                    if (!RegExp(
-                      r'^\d{6}$',
-                    ).hasMatch(valor?.trim() ?? '')) {
+                    if (!RegExp(r'^\d{6}$').hasMatch(valor?.trim() ?? '')) {
                       return 'Ingresa los seis números.';
                     }
 
@@ -263,12 +242,8 @@ class _InvitedRegistrationScreenState
                   controller: _nombreController,
                   enabled: !_cargando,
                   maxLength: 100,
-                  textCapitalization:
-                      TextCapitalization.words,
-                  decoration: _decoracion(
-                    'Nombre',
-                    Icons.person_outline,
-                  ),
+                  textCapitalization: TextCapitalization.words,
+                  decoration: _decoracion('Nombre', Icons.person_outline),
                   validator: _validarNombre,
                 ),
 
@@ -278,12 +253,8 @@ class _InvitedRegistrationScreenState
                   controller: _apellidoController,
                   enabled: !_cargando,
                   maxLength: 100,
-                  textCapitalization:
-                      TextCapitalization.words,
-                  decoration: _decoracion(
-                    'Apellido',
-                    Icons.person_outline,
-                  ),
+                  textCapitalization: TextCapitalization.words,
+                  decoration: _decoracion('Apellido', Icons.person_outline),
                   validator: _validarNombre,
                 ),
 
@@ -308,28 +279,24 @@ class _InvitedRegistrationScreenState
                   obscureText: !_mostrarPassword,
                   autocorrect: false,
                   enableSuggestions: false,
-                  decoration: _decoracion(
-                    'Contraseña',
-                    Icons.lock_outline,
-                  ).copyWith(
-                    suffixIcon: IconButton(
-                      tooltip: 'Mostrar contraseña',
-                      onPressed: () {
-                        setState(() {
-                          _mostrarPassword =
-                              !_mostrarPassword;
-                        });
-                      },
-                      icon: Icon(
-                        _mostrarPassword
-                            ? Icons.visibility_off_outlined
-                            : Icons.visibility_outlined,
+                  decoration: _decoracion('Contraseña', Icons.lock_outline)
+                      .copyWith(
+                        suffixIcon: IconButton(
+                          tooltip: 'Mostrar contraseña',
+                          onPressed: () {
+                            setState(() {
+                              _mostrarPassword = !_mostrarPassword;
+                            });
+                          },
+                          icon: Icon(
+                            _mostrarPassword
+                                ? Icons.visibility_off_outlined
+                                : Icons.visibility_outlined,
+                          ),
+                        ),
                       ),
-                    ),
-                  ),
                   validator: (valor) {
-                    if (valor == null ||
-                        valor.length < 12) {
+                    if (valor == null || valor.length < 12) {
                       return 'Utiliza al menos 12 caracteres.';
                     }
 
@@ -340,34 +307,32 @@ class _InvitedRegistrationScreenState
                 const SizedBox(height: 16),
 
                 TextFormField(
-                  controller:
-                      _confirmarPasswordController,
+                  controller: _confirmarPasswordController,
                   enabled: !_cargando,
                   obscureText: !_mostrarConfirmacion,
                   autocorrect: false,
                   enableSuggestions: false,
-                  decoration: _decoracion(
-                    'Confirmar contraseña',
-                    Icons.lock_reset_outlined,
-                  ).copyWith(
-                    suffixIcon: IconButton(
-                      tooltip: 'Mostrar confirmación',
-                      onPressed: () {
-                        setState(() {
-                          _mostrarConfirmacion =
-                              !_mostrarConfirmacion;
-                        });
-                      },
-                      icon: Icon(
-                        _mostrarConfirmacion
-                            ? Icons.visibility_off_outlined
-                            : Icons.visibility_outlined,
+                  decoration:
+                      _decoracion(
+                        'Confirmar contraseña',
+                        Icons.lock_reset_outlined,
+                      ).copyWith(
+                        suffixIcon: IconButton(
+                          tooltip: 'Mostrar confirmación',
+                          onPressed: () {
+                            setState(() {
+                              _mostrarConfirmacion = !_mostrarConfirmacion;
+                            });
+                          },
+                          icon: Icon(
+                            _mostrarConfirmacion
+                                ? Icons.visibility_off_outlined
+                                : Icons.visibility_outlined,
+                          ),
+                        ),
                       ),
-                    ),
-                  ),
                   validator: (valor) {
-                    if (valor !=
-                        _passwordController.text) {
+                    if (valor != _passwordController.text) {
                       return 'Las contraseñas no coinciden.';
                     }
 
@@ -393,9 +358,7 @@ class _InvitedRegistrationScreenState
                   'únicamente para médicos. '
                   'Si recibiste una invitación como '
                   'administrador, puedes dejarlos vacíos.',
-                  style: TextStyle(
-                    color: Colors.black54,
-                  ),
+                  style: TextStyle(color: Colors.black54),
                 ),
 
                 const SizedBox(height: 18),
@@ -428,17 +391,12 @@ class _InvitedRegistrationScreenState
                   padding: const EdgeInsets.all(16),
                   decoration: BoxDecoration(
                     color: const Color(0xFFE0F2F5),
-                    borderRadius:
-                        BorderRadius.circular(14),
+                    borderRadius: BorderRadius.circular(14),
                   ),
                   child: const Row(
-                    crossAxisAlignment:
-                        CrossAxisAlignment.start,
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Icon(
-                        Icons.info_outline,
-                        color: AppTheme.primary,
-                      ),
+                      Icon(Icons.info_outline, color: AppTheme.primary),
                       SizedBox(width: 12),
                       Expanded(
                         child: Text(
@@ -458,32 +416,22 @@ class _InvitedRegistrationScreenState
                 SizedBox(
                   height: 54,
                   child: ElevatedButton.icon(
-                    onPressed:
-                        _cargando ? null : _registrar,
+                    onPressed: _cargando ? null : _registrar,
                     icon: _cargando
                         ? const SizedBox(
                             height: 20,
                             width: 20,
-                            child:
-                                CircularProgressIndicator(
-                              strokeWidth: 2,
-                            ),
+                            child: CircularProgressIndicator(strokeWidth: 2),
                           )
-                        : const Icon(
-                            Icons.how_to_reg_rounded,
-                          ),
+                        : const Icon(Icons.how_to_reg_rounded),
                     label: Text(
-                      _cargando
-                          ? 'Registrando...'
-                          : 'Completar registro',
+                      _cargando ? 'Registrando...' : 'Completar registro',
                     ),
                     style: ElevatedButton.styleFrom(
-                      backgroundColor:
-                          AppTheme.primary,
+                      backgroundColor: AppTheme.primary,
                       foregroundColor: Colors.white,
                       shape: RoundedRectangleBorder(
-                        borderRadius:
-                            BorderRadius.circular(14),
+                        borderRadius: BorderRadius.circular(14),
                       ),
                     ),
                   ),

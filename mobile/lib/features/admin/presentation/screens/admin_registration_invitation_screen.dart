@@ -1,4 +1,3 @@
-
 import 'package:flutter/material.dart';
 
 import '../../../../core/theme/app_theme.dart';
@@ -49,10 +48,7 @@ class _AdminRegistrationInvitationScreenState
       if (!mounted) return;
 
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(mensaje),
-          backgroundColor: AppTheme.primary,
-        ),
+        SnackBar(content: Text(mensaje), backgroundColor: AppTheme.primary),
       );
 
       _correoController.clear();
@@ -65,9 +61,7 @@ class _AdminRegistrationInvitationScreenState
 
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(
-            error.toString().replaceFirst('Exception: ', ''),
-          ),
+          content: Text(error.toString().replaceFirst('Exception: ', '')),
           backgroundColor: Colors.red.shade700,
         ),
       );
@@ -128,10 +122,7 @@ class _AdminRegistrationInvitationScreenState
                         'Invita a un médico o administrador '
                         'mediante su correo electrónico.',
                         textAlign: TextAlign.center,
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontSize: 15,
-                        ),
+                        style: TextStyle(color: Colors.white, fontSize: 15),
                       ),
                     ],
                   ),
@@ -157,9 +148,7 @@ class _AdminRegistrationInvitationScreenState
                   enabled: !_enviando,
                   decoration: InputDecoration(
                     hintText: 'ejemplo@correo.com',
-                    prefixIcon: const Icon(
-                      Icons.email_outlined,
-                    ),
+                    prefixIcon: const Icon(Icons.email_outlined),
                     filled: true,
                     fillColor: Colors.white,
                     border: OutlineInputBorder(
@@ -173,9 +162,8 @@ class _AdminRegistrationInvitationScreenState
                       return 'Ingresa el correo electrónico.';
                     }
 
-                    if (!RegExp(
-                      r'^[^\s@]+@[^\s@]+\.[^\s@]+$',
-                    ).hasMatch(correo)) {
+                    if (!RegExp(r'^[^\s@]+@[^\s@]+\.[^\s@]+$')
+                        .hasMatch(correo)) {
                       return 'Ingresa un correo válido.';
                     }
 
@@ -197,11 +185,9 @@ class _AdminRegistrationInvitationScreenState
                 const SizedBox(height: 10),
 
                 DropdownButtonFormField<String>(
-  initialValue: _rolSeleccionado,
+                  initialValue: _rolSeleccionado,
                   decoration: InputDecoration(
-                    prefixIcon: const Icon(
-                      Icons.verified_user_outlined,
-                    ),
+                    prefixIcon: const Icon(Icons.verified_user_outlined),
                     filled: true,
                     fillColor: Colors.white,
                     border: OutlineInputBorder(
@@ -209,10 +195,7 @@ class _AdminRegistrationInvitationScreenState
                     ),
                   ),
                   items: const [
-                    DropdownMenuItem(
-                      value: 'MEDICO',
-                      child: Text('Médico'),
-                    ),
+                    DropdownMenuItem(value: 'MEDICO', child: Text('Médico')),
                     DropdownMenuItem(
                       value: 'ADMINISTRADOR',
                       child: Text('Administrador'),
@@ -240,10 +223,7 @@ class _AdminRegistrationInvitationScreenState
                   child: const Row(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Icon(
-                        Icons.info_outline_rounded,
-                        color: AppTheme.primary,
-                      ),
+                      Icon(Icons.info_outline_rounded, color: AppTheme.primary),
                       SizedBox(width: 12),
                       Expanded(
                         child: Text(
@@ -252,10 +232,7 @@ class _AdminRegistrationInvitationScreenState
                           'Los médicos deberán ser aprobados '
                           'por un administrador antes de '
                           'acceder al sistema.',
-                          style: TextStyle(
-                            fontSize: 14,
-                            color: AppTheme.dark,
-                          ),
+                          style: TextStyle(fontSize: 14, color: AppTheme.dark),
                         ),
                       ),
                     ],
@@ -267,19 +244,14 @@ class _AdminRegistrationInvitationScreenState
                 SizedBox(
                   height: 54,
                   child: ElevatedButton.icon(
-                    onPressed:
-                        _enviando ? null : _enviarInvitacion,
+                    onPressed: _enviando ? null : _enviarInvitacion,
                     icon: _enviando
                         ? const SizedBox(
                             width: 20,
                             height: 20,
-                            child: CircularProgressIndicator(
-                              strokeWidth: 2,
-                            ),
+                            child: CircularProgressIndicator(strokeWidth: 2),
                           )
-                        : const Icon(
-                            Icons.send_rounded,
-                          ),
+                        : const Icon(Icons.send_rounded),
                     label: Text(
                       _enviando
                           ? 'Enviando invitación...'
@@ -288,8 +260,7 @@ class _AdminRegistrationInvitationScreenState
                     style: ElevatedButton.styleFrom(
                       backgroundColor: AppTheme.primary,
                       foregroundColor: Colors.white,
-                      disabledBackgroundColor:
-                          AppTheme.primary.withValues(
+                      disabledBackgroundColor: AppTheme.primary.withValues(
                         alpha: 0.6,
                       ),
                       shape: RoundedRectangleBorder(

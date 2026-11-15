@@ -238,28 +238,21 @@ class _LoginScreenState extends State<LoginScreen> {
                       : const Text('Ingresar', style: TextStyle(fontSize: 16)),
                 ),
 
+                const SizedBox(height: 14),
 
-const SizedBox(height: 14),
-
-TextButton.icon(
-  onPressed: _cargando
-      ? null
-      : () {
-          Navigator.of(context).push(
-            MaterialPageRoute<void>(
-              builder: (_) =>
-                  const InvitedRegistrationScreen(),
-            ),
-          );
-        },
-  icon: const Icon(
-    Icons.mark_email_read_outlined,
-  ),
-  label: const Text(
-    'Tengo un código de invitación',
-  ),
-),
-
+                TextButton.icon(
+                  onPressed: _cargando
+                      ? null
+                      : () {
+                          Navigator.of(context).push(
+                            MaterialPageRoute<void>(
+                              builder: (_) => const InvitedRegistrationScreen(),
+                            ),
+                          );
+                        },
+                  icon: const Icon(Icons.mark_email_read_outlined),
+                  label: const Text('Tengo un código de invitación'),
+                ),
 
                 const SizedBox(height: 28),
 

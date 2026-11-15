@@ -1,4 +1,3 @@
-
 import 'package:flutter/material.dart';
 
 import '../../../../core/theme/app_theme.dart';
@@ -22,8 +21,7 @@ class AdminHomeScreen extends StatefulWidget {
   const AdminHomeScreen({super.key});
 
   @override
-  State<AdminHomeScreen> createState() =>
-      _AdminHomeScreenState();
+  State<AdminHomeScreen> createState() => _AdminHomeScreenState();
 }
 
 class _AdminHomeScreenState extends State<AdminHomeScreen> {
@@ -36,42 +34,29 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
   void initState() {
     super.initState();
 
-    _cantidadPendientes =
-        _notificacionesService.contarPendientes();
+    _cantidadPendientes = _notificacionesService.contarPendientes();
   }
 
   void _actualizarNotificaciones() {
     if (!mounted) return;
 
     setState(() {
-      _cantidadPendientes =
-          _notificacionesService.contarPendientes();
+      _cantidadPendientes = _notificacionesService.contarPendientes();
     });
   }
 
-  void _proximamente(
-    BuildContext context,
-    String modulo,
-  ) {
+  void _proximamente(BuildContext context, String modulo) {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text(
-          'El módulo "$modulo" está pendiente de implementación.',
-        ),
+        content: Text('El módulo "$modulo" está pendiente de implementación.'),
         backgroundColor: AppTheme.primary,
       ),
     );
   }
 
-  Future<void> _abrirPantalla(
-    BuildContext context,
-    Widget pantalla,
-  ) async {
-    await Navigator.of(context).push<void>(
-      MaterialPageRoute<void>(
-        builder: (_) => pantalla,
-      ),
-    );
+  Future<void> _abrirPantalla(BuildContext context, Widget pantalla) async {
+    await Navigator.of(context)
+        .push<void>(MaterialPageRoute<void>(builder: (_) => pantalla));
 
     _actualizarNotificaciones();
   }
@@ -88,18 +73,13 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
       color: Colors.white,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(18),
-        side: const BorderSide(
-          color: Color(0xFFE0EBEF),
-        ),
+        side: const BorderSide(color: Color(0xFFE0EBEF)),
       ),
       child: ListTile(
         contentPadding: const EdgeInsets.all(18),
         leading: CircleAvatar(
           backgroundColor: const Color(0xFFE0F2F5),
-          child: Icon(
-            icono,
-            color: AppTheme.primary,
-          ),
+          child: Icon(icono, color: AppTheme.primary),
         ),
         title: Text(
           titulo,
@@ -112,14 +92,8 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
           padding: const EdgeInsets.only(top: 6),
           child: Text(descripcion),
         ),
-        trailing: const Icon(
-          Icons.chevron_right_rounded,
-        ),
-        onTap: onTap ??
-            () => _proximamente(
-                  context,
-                  titulo,
-                ),
+        trailing: const Icon(Icons.chevron_right_rounded),
+        onTap: onTap ?? () => _proximamente(context, titulo),
       ),
     );
   }
@@ -128,9 +102,7 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
     return FutureBuilder<int>(
       future: _cantidadPendientes,
       builder: (context, snapshot) {
-        final cantidad = snapshot.hasError
-    ? 0
-    : (snapshot.data ?? 0);
+        final cantidad = snapshot.hasError ? 0 : (snapshot.data ?? 0);
 
         return SizedBox(
           width: 56,
@@ -145,10 +117,7 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
                   color: AppTheme.primary,
                 ),
                 onPressed: () {
-                  _abrirPantalla(
-                    context,
-                    const AdminNotificationsScreen(),
-                  );
+                  _abrirPantalla(context, const AdminNotificationsScreen());
                 },
               ),
               if (cantidad > 0)
@@ -157,22 +126,17 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
                   top: 2,
                   child: IgnorePointer(
                     child: Container(
-                      constraints: const BoxConstraints(
-                        minWidth: 18,
-                      ),
+                      constraints: const BoxConstraints(minWidth: 18),
                       padding: const EdgeInsets.symmetric(
                         horizontal: 4,
                         vertical: 2,
                       ),
                       decoration: BoxDecoration(
                         color: Colors.red.shade700,
-                        borderRadius:
-                            BorderRadius.circular(12),
+                        borderRadius: BorderRadius.circular(12),
                       ),
                       child: Text(
-                        cantidad > 99
-                            ? '99+'
-                            : '$cantidad',
+                        cantidad > 99 ? '99+' : '$cantidad',
                         textAlign: TextAlign.center,
                         style: const TextStyle(
                           color: Colors.white,
@@ -197,9 +161,7 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
       appBar: AppBar(
         title: const Text(
           'Administrador',
-          style: TextStyle(
-            fontWeight: FontWeight.bold,
-          ),
+          style: TextStyle(fontWeight: FontWeight.bold),
         ),
         centerTitle: true,
         backgroundColor: const Color(0xFFE0F2F5),
@@ -212,15 +174,10 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
             color: AppTheme.primary,
           ),
           onPressed: () {
-            _abrirPantalla(
-              context,
-              const AdminProfileScreen(),
-            );
+            _abrirPantalla(context, const AdminProfileScreen());
           },
         ),
-        actions: [
-          _botonNotificaciones(),
-        ],
+        actions: [_botonNotificaciones()],
       ),
       body: SafeArea(
         child: RefreshIndicator(
@@ -242,17 +199,14 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
               // ==================================
               // BIENVENIDA
               // ==================================
-
               Container(
                 padding: const EdgeInsets.all(24),
                 decoration: BoxDecoration(
                   color: AppTheme.primary,
-                  borderRadius:
-                      BorderRadius.circular(22),
+                  borderRadius: BorderRadius.circular(22),
                 ),
                 child: const Column(
-                  crossAxisAlignment:
-                      CrossAxisAlignment.start,
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Icon(
                       Icons.admin_panel_settings_rounded,
@@ -272,10 +226,7 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
                     Text(
                       'Gestiona tus usuarios y supervisa '
                       'su seguridad.',
-                      style: TextStyle(
-                        fontSize: 15,
-                        color: Colors.white,
-                      ),
+                      style: TextStyle(fontSize: 15, color: Colors.white),
                     ),
                   ],
                 ),
@@ -297,7 +248,6 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
               // ==================================
               // ADMINISTRAR PACIENTES
               // ==================================
-
               _tarjeta(
                 context,
                 icono: Icons.people_outline_rounded,
@@ -306,10 +256,7 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
                     'Consultar, editar, desactivar y '
                     'reactivar cuentas de pacientes.',
                 onTap: () {
-                  _abrirPantalla(
-                    context,
-                    const AdminPatientsScreen(),
-                  );
+                  _abrirPantalla(context, const AdminPatientsScreen());
                 },
               ),
 
@@ -318,7 +265,6 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
               // ==================================
               // ADMINISTRAR MÉDICOS
               // ==================================
-
               _tarjeta(
                 context,
                 icono: Icons.medical_services_outlined,
@@ -327,10 +273,7 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
                     'Consultar y administrar los '
                     'datos profesionales de los médicos.',
                 onTap: () {
-                  _abrirPantalla(
-                    context,
-                    const AdminDoctorsScreen(),
-                  );
+                  _abrirPantalla(context, const AdminDoctorsScreen());
                 },
               ),
 
@@ -339,11 +282,9 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
               // ==================================
               // NUEVO: INVITAR USUARIOS
               // ==================================
-
               _tarjeta(
                 context,
-                icono:
-                    Icons.person_add_alt_1_rounded,
+                icono: Icons.person_add_alt_1_rounded,
                 titulo: 'Invitar usuarios',
                 descripcion:
                     'Enviar invitaciones seguras '
@@ -359,34 +300,30 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
 
               const SizedBox(height: 12),
 
-_tarjeta(
-  context,
-  icono: Icons.verified_user_outlined,
-  titulo: 'Verificar médicos',
-  descripcion:
-      'Revisar y aprobar o rechazar '
-      'las solicitudes de registro médico.',
-  onTap: () {
-    _abrirPantalla(
-      context,
-      const AdminDoctorVerificationScreen(),
-    );
-  },
-),
+              _tarjeta(
+                context,
+                icono: Icons.verified_user_outlined,
+                titulo: 'Verificar médicos',
+                descripcion:
+                    'Revisar y aprobar o rechazar '
+                    'las solicitudes de registro médico.',
+                onTap: () {
+                  _abrirPantalla(
+                    context,
+                    const AdminDoctorVerificationScreen(),
+                  );
+                },
+              ),
 
-const SizedBox(height: 12),
-
+              const SizedBox(height: 12),
 
               // ==================================
               // SOLICITUDES PROFESIONALES
               // ==================================
-
               _tarjeta(
                 context,
-                icono:
-                    Icons.workspace_premium_outlined,
-                titulo:
-                    'Nuevas solicitudes profesionales',
+                icono: Icons.workspace_premium_outlined,
+                titulo: 'Nuevas solicitudes profesionales',
                 descripcion:
                     'Revisar las actualizaciones pendientes '
                     'de cada profesional.',
@@ -403,7 +340,6 @@ const SizedBox(height: 12),
               // ==================================
               // HISTORIAS CLÍNICAS
               // ==================================
-
               _tarjeta(
                 context,
                 icono: Icons.folder_shared_outlined,
@@ -413,10 +349,7 @@ const SizedBox(height: 12),
                     'de los pacientes según los '
                     'permisos autorizados.',
                 onTap: () {
-                  _abrirPantalla(
-                    context,
-                    const AdminHistoryScreen(),
-                  );
+                  _abrirPantalla(context, const AdminHistoryScreen());
                 },
               ),
 
@@ -425,7 +358,6 @@ const SizedBox(height: 12),
               // ==================================
               // CORRECCIONES
               // ==================================
-
               _tarjeta(
                 context,
                 icono: Icons.edit_document,
@@ -434,10 +366,7 @@ const SizedBox(height: 12),
                     'Gestionar las solicitudes '
                     'de corrección de historias clínicas.',
                 onTap: () {
-                  _abrirPantalla(
-                    context,
-                    const AdminCorrectionsScreen(),
-                  );
+                  _abrirPantalla(context, const AdminCorrectionsScreen());
                 },
               ),
 
@@ -446,7 +375,6 @@ const SizedBox(height: 12),
               // ==================================
               // PERMISOS MÉDICOS
               // ==================================
-
               _tarjeta(
                 context,
                 icono: Icons.lock_person_outlined,
@@ -467,7 +395,6 @@ const SizedBox(height: 12),
               // ==================================
               // AUDITORÍA
               // ==================================
-
               _tarjeta(
                 context,
                 icono: Icons.manage_search_rounded,
@@ -476,10 +403,7 @@ const SizedBox(height: 12),
                     'Consultar los movimientos '
                     'y actividades registradas.',
                 onTap: () {
-                  _abrirPantalla(
-                    context,
-                    const AdminAuditScreen(),
-                  );
+                  _abrirPantalla(context, const AdminAuditScreen());
                 },
               ),
 
@@ -491,10 +415,7 @@ const SizedBox(height: 12),
                   'proteger tu historia '
                   'CipherMed',
                   textAlign: TextAlign.center,
-                  style: TextStyle(
-                    color: Colors.black54,
-                    fontSize: 13,
-                  ),
+                  style: TextStyle(color: Colors.black54, fontSize: 13),
                 ),
               ),
 

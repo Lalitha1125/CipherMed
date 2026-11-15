@@ -270,18 +270,24 @@ app.get(
   async (req, res) => {
     try {
       const [usuarios] = await pool.execute(
-        `SELECT
-            ID_USUARIO,
-            NOMBRE,
-            APELLIDO,
-            CORREO,
-            TELEFONO,
-            FECHA_REGISTRO,
-            ESTADO
-         FROM Usuario
-         WHERE ID_USUARIO = ?
-           AND ESTADO = 'ACTIVO'
-         LIMIT 1`,
+        `
+SELECT
+    u.ID_USUARIO,
+    u.NOMBRE,
+    u.APELLIDO,
+    u.CORREO,
+    u.TELEFONO,
+    u.FECHA_REGISTRO,
+    u.ESTADO,
+    r.NOMBRE_ROL AS ROL
+FROM Usuario u
+INNER JOIN Usuario_Rol ur
+    ON ur.ID_USUARIO = u.ID_USUARIO
+INNER JOIN Rol r
+    ON r.ID_ROL = ur.ID_ROL
+WHERE u.ID_USUARIO = ?
+  AND u.ESTADO = 'ACTIVO'
+LIMIT 1`,
         [req.usuario.id]
       );
 
@@ -295,15 +301,18 @@ app.get(
 
       return res.status(200).json({
         message: 'Sesión válida.',
-        usuario: {
-          id: usuario.ID_USUARIO,
-          nombre: usuario.NOMBRE,
-          apellido: usuario.APELLIDO,
-          correo: usuario.CORREO,
-          telefono: usuario.TELEFONO,
-          fechaRegistro: usuario.FECHA_REGISTRO,
-          estado: usuario.ESTADO
-        }
+        
+usuario: {
+  id: usuario.ID_USUARIO,
+  nombre: usuario.NOMBRE,
+  apellido: usuario.APELLIDO,
+  correo: usuario.CORREO,
+  telefono: usuario.TELEFONO,
+  fechaRegistro: usuario.FECHA_REGISTRO,
+  estado: usuario.ESTADO,
+  rol: usuario.ROL
+}
+
       });
 
     } catch (error) {

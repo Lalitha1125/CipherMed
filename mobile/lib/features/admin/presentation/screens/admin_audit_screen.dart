@@ -1,4 +1,3 @@
-
 import 'package:flutter/material.dart';
 
 import '../../data/admin_audit_service.dart';
@@ -11,15 +10,13 @@ class AdminAuditScreen extends StatefulWidget {
   const AdminAuditScreen({super.key});
 
   @override
-  State<AdminAuditScreen> createState() =>
-      _AdminAuditScreenState();
+  State<AdminAuditScreen> createState() => _AdminAuditScreenState();
 }
 
 class _AdminAuditScreenState extends State<AdminAuditScreen> {
   final AdminAuditService _service = AdminAuditService();
 
-  final TextEditingController _buscarController =
-      TextEditingController();
+  final TextEditingController _buscarController = TextEditingController();
 
   late Future<Map<String, dynamic>> _auditoria;
 
@@ -85,9 +82,7 @@ class _AdminAuditScreenState extends State<AdminAuditScreen> {
     if (texto.length > 100) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text(
-            'La búsqueda no puede superar 100 caracteres.',
-          ),
+          content: Text('La búsqueda no puede superar 100 caracteres.'),
         ),
       );
       return;
@@ -140,16 +135,12 @@ class _AdminAuditScreenState extends State<AdminAuditScreen> {
       return valor.toInt();
     }
 
-    return int.tryParse(
-          valor?.toString() ?? '',
-        ) ??
-        0;
+    return int.tryParse(valor?.toString() ?? '') ?? 0;
   }
 
   String _nombreUsuario(Map<String, dynamic> registro) {
     final nombre = registro['nombre']?.toString().trim() ?? '';
-    final apellido =
-        registro['apellido']?.toString().trim() ?? '';
+    final apellido = registro['apellido']?.toString().trim() ?? '';
 
     final nombreCompleto = '$nombre $apellido'.trim();
 
@@ -190,8 +181,7 @@ class _AdminAuditScreenState extends State<AdminAuditScreen> {
       return Icons.login_rounded;
     }
 
-    if (texto.contains('PERMISO') ||
-        texto.contains('ACCESO')) {
+    if (texto.contains('PERMISO') || texto.contains('ACCESO')) {
       return Icons.lock_outline_rounded;
     }
 
@@ -233,11 +223,7 @@ class _AdminAuditScreenState extends State<AdminAuditScreen> {
           Text(
             'Consulta las acciones realizadas por los '
             'usuarios.',
-            style: TextStyle(
-              fontSize: 14,
-              height: 1.5,
-              color: Colors.black54,
-            ),
+            style: TextStyle(fontSize: 14, height: 1.5, color: Colors.black54),
           ),
         ],
       ),
@@ -257,15 +243,11 @@ class _AdminAuditScreenState extends State<AdminAuditScreen> {
         onSubmitted: (_) => _realizarBusqueda(),
         decoration: InputDecoration(
           hintText: 'Buscar usuario o acción',
-          prefixIcon: const Icon(
-            Icons.search_rounded,
-          ),
+          prefixIcon: const Icon(Icons.search_rounded),
           suffixIcon: IconButton(
             tooltip: 'Buscar',
             onPressed: _realizarBusqueda,
-            icon: const Icon(
-              Icons.arrow_forward_rounded,
-            ),
+            icon: const Icon(Icons.arrow_forward_rounded),
           ),
           filled: true,
           fillColor: Colors.white,
@@ -275,15 +257,11 @@ class _AdminAuditScreenState extends State<AdminAuditScreen> {
           ),
           border: OutlineInputBorder(
             borderRadius: BorderRadius.circular(14),
-            borderSide: const BorderSide(
-              color: Color(0xFFDCE9EE),
-            ),
+            borderSide: const BorderSide(color: Color(0xFFDCE9EE)),
           ),
           enabledBorder: OutlineInputBorder(
             borderRadius: BorderRadius.circular(14),
-            borderSide: const BorderSide(
-              color: Color(0xFFDCE9EE),
-            ),
+            borderSide: const BorderSide(color: Color(0xFFDCE9EE)),
           ),
         ),
       ),
@@ -294,20 +272,13 @@ class _AdminAuditScreenState extends State<AdminAuditScreen> {
   // FILA DE INFORMACIÓN
   // ==================================================
 
-  Widget _detalle({
-    required IconData icono,
-    required String texto,
-  }) {
+  Widget _detalle({required IconData icono, required String texto}) {
     return Padding(
       padding: const EdgeInsets.only(top: 10),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Icon(
-            icono,
-            size: 18,
-            color: Colors.blueGrey,
-          ),
+          Icon(icono, size: 18, color: Colors.blueGrey),
           const SizedBox(width: 10),
           Expanded(
             child: Text(
@@ -339,9 +310,7 @@ class _AdminAuditScreenState extends State<AdminAuditScreen> {
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(18),
-        border: Border.all(
-          color: const Color(0xFFDCE9EE),
-        ),
+        border: Border.all(color: const Color(0xFFDCE9EE)),
       ),
       child: Column(
         mainAxisSize: MainAxisSize.min,
@@ -390,9 +359,7 @@ class _AdminAuditScreenState extends State<AdminAuditScreen> {
 
           const SizedBox(height: 12),
 
-          const Divider(
-            color: Color(0xFFDCE9EE),
-          ),
+          const Divider(color: Color(0xFFDCE9EE)),
 
           _detalle(
             icono: Icons.email_outlined,
@@ -411,8 +378,7 @@ class _AdminAuditScreenState extends State<AdminAuditScreen> {
 
           _detalle(
             icono: Icons.tag_rounded,
-            texto:
-                'Registro #${_entero(registro['idAuditoria'])}',
+            texto: 'Registro #${_entero(registro['idAuditoria'])}',
           ),
         ],
       ),
@@ -423,19 +389,13 @@ class _AdminAuditScreenState extends State<AdminAuditScreen> {
   // PAGINACIÓN
   // ==================================================
 
-  Widget _paginacion({
-    required int totalPaginas,
-    required int totalRegistros,
-  }) {
+  Widget _paginacion({required int totalPaginas, required int totalRegistros}) {
     if (totalPaginas <= 1) {
       return const SizedBox.shrink();
     }
 
     return Padding(
-      padding: const EdgeInsets.only(
-        top: 14,
-        bottom: 24,
-      ),
+      padding: const EdgeInsets.only(top: 14, bottom: 24),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
@@ -451,10 +411,7 @@ class _AdminAuditScreenState extends State<AdminAuditScreen> {
           Text(
             '$totalRegistros registros en total',
             textAlign: TextAlign.center,
-            style: const TextStyle(
-              fontSize: 12,
-              color: Colors.black54,
-            ),
+            style: const TextStyle(fontSize: 12, color: Colors.black54),
           ),
           const SizedBox(height: 14),
           Wrap(
@@ -466,18 +423,14 @@ class _AdminAuditScreenState extends State<AdminAuditScreen> {
                 onPressed: _pagina > 1
                     ? () => _cambiarPagina(_pagina - 1)
                     : null,
-                icon: const Icon(
-                  Icons.chevron_left_rounded,
-                ),
+                icon: const Icon(Icons.chevron_left_rounded),
                 label: const Text('Anterior'),
               ),
               OutlinedButton.icon(
                 onPressed: _pagina < totalPaginas
                     ? () => _cambiarPagina(_pagina + 1)
                     : null,
-                icon: const Icon(
-                  Icons.chevron_right_rounded,
-                ),
+                icon: const Icon(Icons.chevron_right_rounded),
                 label: const Text('Siguiente'),
               ),
             ],
@@ -497,10 +450,7 @@ class _AdminAuditScreenState extends State<AdminAuditScreen> {
     bool error = false,
   }) {
     return Padding(
-      padding: const EdgeInsets.symmetric(
-        vertical: 45,
-        horizontal: 10,
-      ),
+      padding: const EdgeInsets.symmetric(vertical: 45, horizontal: 10),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
@@ -513,9 +463,7 @@ class _AdminAuditScreenState extends State<AdminAuditScreen> {
           Text(
             mensaje,
             textAlign: TextAlign.center,
-            style: const TextStyle(
-              color: Colors.black54,
-            ),
+            style: const TextStyle(color: Colors.black54),
           ),
           if (error) ...[
             const SizedBox(height: 14),
@@ -552,9 +500,7 @@ class _AdminAuditScreenState extends State<AdminAuditScreen> {
           IconButton(
             tooltip: 'Actualizar registros',
             onPressed: _actualizar,
-            icon: const Icon(
-              Icons.refresh_rounded,
-            ),
+            icon: const Icon(Icons.refresh_rounded),
           ),
         ],
       ),
@@ -562,57 +508,47 @@ class _AdminAuditScreenState extends State<AdminAuditScreen> {
         child: FutureBuilder<Map<String, dynamic>>(
           future: _auditoria,
           builder: (context, snapshot) {
-            final List<Widget> elementos = [
-              _encabezado(),
-              _buscador(),
-            ];
+            final List<Widget> elementos = [_encabezado(), _buscador()];
 
-            if (snapshot.connectionState !=
-                ConnectionState.done) {
+            if (snapshot.connectionState != ConnectionState.done) {
               elementos.add(
                 const Padding(
                   padding: EdgeInsets.symmetric(vertical: 50),
-                  child: Center(
-                    child: CircularProgressIndicator(),
-                  ),
+                  child: Center(child: CircularProgressIndicator()),
                 ),
               );
             } else if (snapshot.hasError) {
               elementos.add(
                 _mensaje(
                   icono: Icons.error_outline_rounded,
-                  mensaje: snapshot.error
-                      .toString()
-                      .replaceFirst('Exception: ', ''),
+                  mensaje: snapshot.error.toString().replaceFirst(
+                    'Exception: ',
+                    '',
+                  ),
                   error: true,
                 ),
               );
             } else {
               final datos = snapshot.data ?? {};
 
-              final registros =
-                  List<Map<String, dynamic>>.from(
+              final registros = List<Map<String, dynamic>>.from(
                 datos['auditorias'] ?? [],
               );
 
               final total = _entero(datos['total']);
-              final totalPaginas =
-                  _entero(datos['totalPaginas']);
+              final totalPaginas = _entero(datos['totalPaginas']);
 
               if (registros.isEmpty) {
                 elementos.add(
                   _mensaje(
                     icono: Icons.inbox_outlined,
-                    mensaje:
-                        'No se encontraron registros de auditoría.',
+                    mensaje: 'No se encontraron registros de auditoría.',
                   ),
                 );
               } else {
                 elementos.add(
                   Padding(
-                    padding: const EdgeInsets.only(
-                      bottom: 16,
-                    ),
+                    padding: const EdgeInsets.only(bottom: 16),
                     child: Text(
                       '$total registros encontrados',
                       style: const TextStyle(
@@ -624,9 +560,7 @@ class _AdminAuditScreenState extends State<AdminAuditScreen> {
                 );
 
                 for (final registro in registros) {
-                  elementos.add(
-                    _tarjetaAuditoria(registro),
-                  );
+                  elementos.add(_tarjetaAuditoria(registro));
                 }
 
                 elementos.add(
@@ -641,8 +575,7 @@ class _AdminAuditScreenState extends State<AdminAuditScreen> {
             return RefreshIndicator(
               onRefresh: _refrescar,
               child: ListView(
-                physics:
-                    const AlwaysScrollableScrollPhysics(),
+                physics: const AlwaysScrollableScrollPhysics(),
                 padding: const EdgeInsets.all(20),
                 children: elementos,
               ),
