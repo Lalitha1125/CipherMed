@@ -449,6 +449,46 @@ async function cambiarEstadoUsuario(
       });
     }
 
+    // ==================================================
+    // PROTEGER LA REACTIVACIÓN DE MÉDICOS NUEVOS
+    // ==================================================
+    // Los médicos registrados mediante invitación
+    // deben tener su verificación inicial aprobada.
+    //
+    // Los médicos antiguos, sin registro en
+    // Verificacion_Medico, conservan su comportamiento.
+
+    if (
+      rolEsperado === 'MEDICO' &&
+      nuevoEstado === 'ACTIVO'
+    ) {
+      const [verificaciones] = await conexion.execute(
+        `SELECT
+           v.ESTADO
+         FROM Verificacion_Medico v
+         INNER JOIN Medico m
+           ON m.ID_MEDICO = v.ID_MEDICO
+         WHERE m.ID_USUARIO = ?
+         LIMIT 1`,
+        [idUsuario]
+      );
+
+      if (
+        verificaciones.length > 0 &&
+        verificaciones[0].ESTADO !== 'APROBADA'
+      ) {
+        await conexion.rollback();
+
+        return res.status(403).json({
+          message:
+            'No se puede reactivar este médico porque ' +
+            'su verificación profesional inicial ' +
+            'todavía no ha sido aprobada.'
+        });
+      }
+    }
+
+
     // Actualizar el estado de la cuenta.
     await conexion.execute(
       `UPDATE Usuario

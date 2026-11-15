@@ -81,6 +81,18 @@ const {
   '../controllers/admin-professional-requests.controller'
 );
 
+ // ==================================================
+ // VERIFICACIÓN INICIAL DE MÉDICOS NUEVOS
+ // ==================================================
+
+const {
+  listarVerificacionesMedicos,
+  revisarVerificacionMedico
+} = require(
+  '../controllers/admin-doctor-verification.controller'
+);
+
+
 // ==================================================
 // CONFIGURACIÓN DE RUTAS
 // ==================================================
@@ -208,6 +220,25 @@ router.patch(
   '/professional-requests/:id/review',
   revisarSolicitudProfesional
 );
+
+
+// ==================================================
+// 8. VERIFICACIÓN DE MÉDICOS NUEVOS
+// ==================================================
+
+// Consultar registros médicos pendientes
+// y sus resultados de verificación.
+router.get(
+  '/doctor-verifications',
+  listarVerificacionesMedicos
+);
+
+// Aprobar o rechazar el registro de un médico.
+router.patch(
+  '/doctor-verifications/:id/review',
+  revisarVerificacionMedico
+);
+
 
 // ==================================================
 // EXPORTAR RUTAS

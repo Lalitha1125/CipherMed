@@ -22,4 +22,3 @@ class CipherMedApp extends StatelessWidget {
     );
   }
 }
-

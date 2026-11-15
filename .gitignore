@@ -51,4 +51,18 @@ build/
 # Archivos de configuración local
 *.log
 
-private_uploads/
+private_uploads/.env
+.env.*
+!.env.example
+!.env.sample
+**/node_modules/
+**/.dart_tool/
+**/build/
+**/local.properties
+**/key.properties
+**/*.jks
+**/*.keystore
+**/*.pem
+**/*.p12
+**/*.pfx
+/backend/private_uploads/

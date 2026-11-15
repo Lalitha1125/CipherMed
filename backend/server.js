@@ -54,11 +54,21 @@ const doctorProfessionalRequestsRoutes = require(
   './src/routes/doctor-professional-requests.routes'
 );
 
-
-// NUEVA RUTA:
 // El paciente consulta el resultado de su corrección.
 const patientCorrectionResultRoutes = require(
   './src/routes/patient-correction-result.routes'
+);
+
+// ==========================================
+// NUEVAS RUTAS: REGISTRO POR INVITACIÓN
+// ==========================================
+
+const registrationInvitationRoutes = require(
+  './src/routes/registration-invitation.routes'
+);
+
+const invitedRegistrationRoutes = require(
+  './src/routes/invited-registration.routes'
 );
 
 // ==========================================
@@ -217,10 +227,8 @@ app.use(
   doctorProfessionalRequestsRoutes
 );
 
-
-
 // ==========================================
-// NUEVA RUTA: RESULTADOS DE CORRECCIONES
+// RESULTADOS DE CORRECCIONES
 // ==========================================
 
 // Permite consultar la respuesta médica
@@ -229,6 +237,27 @@ app.use(
 app.use(
   '/api/patient/correction-results',
   patientCorrectionResultRoutes
+);
+
+// ==========================================
+// NUEVO: REGISTRO POR INVITACIÓN
+// ==========================================
+
+// Permite que un administrador autenticado
+// genere invitaciones para nuevos médicos
+// o administradores.
+app.use(
+  '/api/registration-invitations',
+  registrationInvitationRoutes
+);
+
+// Permite completar el registro utilizando
+// un código de invitación válido.
+//
+// La ruta aplica su propio límite de solicitudes.
+app.use(
+  '/api/invited-registration',
+  invitedRegistrationRoutes
 );
 
 // ==========================================
@@ -502,7 +531,7 @@ app.use((error, req, res, next) => {
     return res.status(400).json({
       message:
         'El contenido JSON no es válido.'
-    });
+      });
   }
 
   return res.status(500).json({

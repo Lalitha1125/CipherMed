@@ -76,7 +76,74 @@ Si no solicitaste cambiar tu contraseña, ignora este mensaje.`,
   });
 }
 
+async function enviarInvitacionRegistro(correo, codigo, rol) {
+  const nombreRol =
+    rol === 'MEDICO' ? 'médico' : 'administrador';
+
+  await transporter.sendMail({
+    from: `"CipherMed" <${process.env.SMTP_FROM}>`,
+    to: correo,
+    subject: 'CipherMed - Invitación para crear tu cuenta',
+
+    text: `Has recibido una invitación para registrarte en CipherMed como ${nombreRol}.
+
+Tu código de invitación es: ${codigo}
+
+Este código vence en 10 minutos y solo puede utilizarse una vez.
+
+Si no esperabas esta invitación, ignora este mensaje.`,
+
+    html: `
+      <div style="
+        font-family:Arial,sans-serif;
+        max-width:500px;
+        margin:auto;
+        padding:24px;
+      ">
+        <h2 style="color:#006b80">
+          CipherMed
+        </h2>
+
+        <h3>Invitación de registro</h3>
+
+        <p>
+          Has recibido una invitación para
+          crear tu cuenta de
+          <strong>${nombreRol}</strong>.
+        </p>
+
+        <p>Tu código de seguridad es:</p>
+
+        <h1 style="
+          letter-spacing:8px;
+          color:#12384d;
+        ">
+          ${codigo}
+        </h1>
+
+        <p>
+          Este código vence en
+          <strong>10 minutos</strong>.
+        </p>
+
+        <p>
+          No compartas este código con nadie.
+        </p>
+
+        <hr>
+
+        <small>
+          Si no esperabas esta invitación,
+          ignora este mensaje.
+        </small>
+      </div>
+    `
+  });
+}
+
+
 module.exports = {
   enviarOtp,
-  enviarCodigoRecuperacion
+  enviarCodigoRecuperacion,
+  enviarInvitacionRegistro
 };
