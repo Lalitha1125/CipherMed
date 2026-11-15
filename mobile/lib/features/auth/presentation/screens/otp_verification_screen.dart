@@ -6,6 +6,7 @@ import '../../data/auth_service.dart';
 import '../../../patient/presentation/screens/patient_home_screen.dart';
 import '../../../doctor/presentation/screens/doctor_home_screen.dart';
 import '../../../admin/presentation/screens/admin_home_screen.dart';
+import '../../../../../core/biometrics/biometric_auth_service.dart';
 
 class OtpVerificationScreen extends StatefulWidget {
   final String correo;
@@ -26,6 +27,80 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
   void dispose() {
     _codigoController.dispose();
     super.dispose();
+  }
+
+  Future<void> _ofrecerActivacionBiometrica(String usuarioId) async {
+    try {
+      final biometricService = BiometricAuthService();
+
+      // Comprobar si el dispositivo tiene biometría registrada.
+      final disponible = await biometricService.biometriaDisponible();
+
+      if (!mounted || !disponible) return;
+
+      // Preguntar si el usuario desea activar la huella.
+      final activar = await showDialog<bool>(
+        context: context,
+        barrierDismissible: false,
+        builder: (dialogContext) => AlertDialog(
+          title: const Row(
+            children: [
+              Icon(Icons.fingerprint, color: Color(0xFF006D80), size: 30),
+              SizedBox(width: 10),
+              Expanded(child: Text('Activar huella digital')),
+            ],
+          ),
+          content: const Text(
+            '¿Deseas utilizar tu huella digital para ingresar '
+            'a CipherMed la próxima vez?\n\n'
+            'Esta opción es voluntaria y podrás seguir '
+            'utilizando tu contraseña y código de verificación.',
+          ),
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.of(dialogContext).pop(false);
+              },
+              child: const Text('Ahora no'),
+            ),
+            ElevatedButton(
+              onPressed: () {
+                Navigator.of(dialogContext).pop(true);
+              },
+              child: const Text('Activar huella'),
+            ),
+          ],
+        ),
+      );
+
+      if (!mounted || activar != true) return;
+
+      // Verificar la huella antes de habilitar la opción.
+      final autenticado = await biometricService.autenticar();
+
+      if (!mounted) return;
+
+      if (autenticado) {
+        await SecureSessionStorage.guardarUsuarioBiometrico(usuarioId);
+        await SecureSessionStorage.guardarBiometriaHabilitada(true);
+
+        if (!mounted) return;
+
+        _mostrarMensaje('Huella digital activada correctamente.');
+      } else {
+        _mostrarMensaje(
+          'No fue posible verificar tu huella digital.',
+          esError: true,
+        );
+      }
+    } catch (_) {
+      if (!mounted) return;
+
+      _mostrarMensaje(
+        'No fue posible activar la huella digital.',
+        esError: true,
+      );
+    }
   }
 
   Future<void> _verificarCodigo() async {
@@ -134,6 +209,14 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
           ],
         ),
       );
+
+      if (!mounted) return;
+
+      // Ofrecer la activación biométrica después del OTP.
+      final usuarioId = usuario['id']?.toString() ?? '';
+      if (usuarioId.isNotEmpty) {
+        await _ofrecerActivacionBiometrica(usuarioId);
+      }
 
       if (!mounted) return;
 

@@ -1,4 +1,3 @@
-
 import 'dart:convert';
 
 import 'package:http/http.dart' as http;
@@ -11,9 +10,7 @@ class AdminDoctorVerificationService {
     final token = await SecureSessionStorage.obtenerToken();
 
     if (token == null || token.isEmpty) {
-      throw Exception(
-        'Tu sesión ha terminado. Inicia sesión nuevamente.',
-      );
+      throw Exception('Tu sesión ha terminado. Inicia sesión nuevamente.');
     }
 
     return {
@@ -23,9 +20,7 @@ class AdminDoctorVerificationService {
     };
   }
 
-  Map<String, dynamic> _leerRespuesta(
-    http.Response respuesta,
-  ) {
+  Map<String, dynamic> _leerRespuesta(http.Response respuesta) {
     try {
       final datos = jsonDecode(respuesta.body);
 
@@ -34,26 +29,20 @@ class AdminDoctorVerificationService {
       }
     } catch (_) {}
 
-    throw Exception(
-      'El servidor devolvió una respuesta inválida.',
-    );
+    throw Exception('El servidor devolvió una respuesta inválida.');
   }
 
   // ==========================================
   // CONSULTAR VERIFICACIONES
   // ==========================================
 
-  Future<List<Map<String, dynamic>>>
-      obtenerVerificaciones() async {
+  Future<List<Map<String, dynamic>>> obtenerVerificaciones() async {
     final uri = Uri.parse(
       '${ApiConfig.baseUrl}/api/admin/doctor-verifications',
     );
 
     final respuesta = await http
-        .get(
-          uri,
-          headers: await _headers(),
-        )
+        .get(uri, headers: await _headers())
         .timeout(const Duration(seconds: 15));
 
     final datos = _leerRespuesta(respuesta);
@@ -76,9 +65,7 @@ class AdminDoctorVerificationService {
 
     return registros.map<Map<String, dynamic>>((item) {
       if (item is! Map<String, dynamic>) {
-        throw Exception(
-          'Se recibió una verificación inválida.',
-        );
+        throw Exception('Se recibió una verificación inválida.');
       }
 
       return item;
@@ -95,25 +82,18 @@ class AdminDoctorVerificationService {
     required String observacion,
   }) async {
     if (idVerificacion <= 0) {
-      throw Exception(
-        'La verificación seleccionada no es válida.',
-      );
+      throw Exception('La verificación seleccionada no es válida.');
     }
 
-    final decisionLimpia =
-        decision.trim().toUpperCase();
+    final decisionLimpia = decision.trim().toUpperCase();
 
-    if (decisionLimpia != 'APROBADA' &&
-        decisionLimpia != 'RECHAZADA') {
-      throw Exception(
-        'Selecciona una decisión válida.',
-      );
+    if (decisionLimpia != 'APROBADA' && decisionLimpia != 'RECHAZADA') {
+      throw Exception('Selecciona una decisión válida.');
     }
 
     final observacionLimpia = observacion.trim();
 
-    if (observacionLimpia.length < 10 ||
-        observacionLimpia.length > 500) {
+    if (observacionLimpia.length < 10 || observacionLimpia.length > 500) {
       throw Exception(
         'La observación debe tener entre '
         '10 y 500 caracteres.',
@@ -140,8 +120,7 @@ class AdminDoctorVerificationService {
 
     if (respuesta.statusCode != 200) {
       throw Exception(
-        datos['message']?.toString() ??
-            'No fue posible revisar la solicitud.',
+        datos['message']?.toString() ?? 'No fue posible revisar la solicitud.',
       );
     }
 

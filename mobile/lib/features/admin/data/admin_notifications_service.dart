@@ -1,4 +1,3 @@
-
 import 'admin_corrections_service.dart';
 import 'admin_professional_requests_service.dart';
 
@@ -6,15 +5,12 @@ class AdminNotificationsService {
   final AdminProfessionalRequestsService _profesionales =
       AdminProfessionalRequestsService();
 
-  final AdminCorrectionsService _correcciones =
-      AdminCorrectionsService();
+  final AdminCorrectionsService _correcciones = AdminCorrectionsService();
 
   Future<List<Map<String, dynamic>>> obtenerNotificaciones() async {
     // Consultar ambas clases de solicitudes.
     final resultados = await Future.wait([
-      _profesionales.obtenerSolicitudes(
-        estado: 'PENDIENTE',
-      ),
+      _profesionales.obtenerSolicitudes(estado: 'PENDIENTE'),
       _correcciones.obtenerSolicitudes(),
     ]);
 
@@ -45,18 +41,15 @@ class AdminNotificationsService {
     // ==========================================
 
     for (final solicitud in solicitudesCorreccion) {
-      final estado =
-          '${solicitud['estado'] ?? ''}'.trim().toUpperCase();
+      final estado = '${solicitud['estado'] ?? ''}'.trim().toUpperCase();
 
       if (estado != 'PENDIENTE') {
         continue;
       }
 
-      final nombre =
-          '${solicitud['nombrePaciente'] ?? ''}'.trim();
+      final nombre = '${solicitud['nombrePaciente'] ?? ''}'.trim();
 
-      final apellido =
-          '${solicitud['apellidoPaciente'] ?? ''}'.trim();
+      final apellido = '${solicitud['apellidoPaciente'] ?? ''}'.trim();
 
       final paciente = '$nombre $apellido'.trim();
 
@@ -76,13 +69,9 @@ class AdminNotificationsService {
     // ==========================================
 
     notificaciones.sort((a, b) {
-      final fechaA = DateTime.tryParse(
-        '${a['fecha'] ?? ''}',
-      );
+      final fechaA = DateTime.tryParse('${a['fecha'] ?? ''}');
 
-      final fechaB = DateTime.tryParse(
-        '${b['fecha'] ?? ''}',
-      );
+      final fechaB = DateTime.tryParse('${b['fecha'] ?? ''}');
 
       if (fechaA == null && fechaB == null) {
         return 0;

@@ -136,7 +136,6 @@ class _AdminProfessionalRequestsScreenState
     if (_procesando) return;
 
     final idSolicitud = _id(solicitud['idSolicitud']);
-
     if (idSolicitud <= 0) {
       _mensaje('La solicitud no es válida.', error: true);
       return;
@@ -144,17 +143,19 @@ class _AdminProfessionalRequestsScreenState
 
     final observacionController = TextEditingController();
     bool documentoRevisado = false;
-    bool enviandoDialogo = false;
+    final aprobar = decision == 'APROBADA';
+    String? observacionConfirmada;
 
     try {
-      await showDialog<void>(
+      // El diálogo solo recoge la confirmación. La solicitud al servidor
+      // se procesa DESPUÉS de cerrarlo para evitar problemas de navegación
+      // y reconstrucción de widgets durante su desmontaje.
+      observacionConfirmada = await showDialog<String>(
         context: context,
         barrierDismissible: false,
         builder: (dialogContext) {
           return StatefulBuilder(
             builder: (context, actualizarDialogo) {
-              final aprobar = decision == 'APROBADA';
-
               return AlertDialog(
                 title: Text(
                   aprobar ? 'Aprobar actualización' : 'Rechazar actualización',
@@ -164,17 +165,13 @@ class _AdminProfessionalRequestsScreenState
                     mainAxisSize: MainAxisSize.min,
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(
-                        'Médico: '
-                        '${_texto(solicitud['nombreMedico'])}',
-                      ),
+                      Text('Médico: ${_texto(solicitud['nombreMedico'])}'),
                       const SizedBox(height: 8),
                       Text(
                         'Nueva especialidad: '
                         '${_texto(solicitud['especialidadSolicitada'])}',
                       ),
                       const SizedBox(height: 16),
-
                       if (aprobar) ...[
                         const Text(
                           'Antes de aprobar, revisa el '
@@ -184,36 +181,26 @@ class _AdminProfessionalRequestsScreenState
                         ),
                         const SizedBox(height: 12),
                         OutlinedButton.icon(
-                          onPressed: enviandoDialogo
-                              ? null
-                              : () async {
-                                  final abierto = await _verDocumento(
-                                    solicitud,
-                                  );
-
-                                  if (!dialogContext.mounted) {
-                                    return;
-                                  }
-
-                                  if (abierto) {
-                                    actualizarDialogo(() {
-                                      documentoRevisado = true;
-                                    });
-                                  }
-                                },
+                          onPressed: () async {
+                            final abierto = await _verDocumento(solicitud);
+                            if (!dialogContext.mounted) return;
+                            if (abierto) {
+                              actualizarDialogo(() {
+                                documentoRevisado = true;
+                              });
+                            }
+                          },
                           icon: const Icon(Icons.picture_as_pdf_outlined),
                           label: const Text('Abrir documento PDF'),
                         ),
                         CheckboxListTile(
                           contentPadding: EdgeInsets.zero,
                           value: documentoRevisado,
-                          onChanged: enviandoDialogo
-                              ? null
-                              : (valor) {
-                                  actualizarDialogo(() {
-                                    documentoRevisado = valor ?? false;
-                                  });
-                                },
+                          onChanged: (valor) {
+                            actualizarDialogo(() {
+                              documentoRevisado = valor ?? false;
+                            });
+                          },
                           title: const Text(
                             'Confirmo que revisé y '
                             'verifiqué el título profesional.',
@@ -221,14 +208,11 @@ class _AdminProfessionalRequestsScreenState
                           controlAffinity: ListTileControlAffinity.leading,
                         ),
                       ],
-
                       const SizedBox(height: 12),
-
                       TextField(
                         controller: observacionController,
                         maxLength: 500,
                         maxLines: 3,
-                        enabled: !enviandoDialogo,
                         decoration: InputDecoration(
                           labelText: aprobar
                               ? 'Observación (opcional)'
@@ -244,9 +228,7 @@ class _AdminProfessionalRequestsScreenState
                 ),
                 actions: [
                   TextButton(
-                    onPressed: enviandoDialogo
-                        ? null
-                        : () => Navigator.of(dialogContext).pop(),
+                    onPressed: () => Navigator.of(dialogContext).pop(),
                     child: const Text('Cancelar'),
                   ),
                   ElevatedButton(
@@ -256,81 +238,26 @@ class _AdminProfessionalRequestsScreenState
                           : Colors.red.shade700,
                       foregroundColor: Colors.white,
                     ),
-                    onPressed: enviandoDialogo
-                        ? null
-                        : () async {
-                            final observacion = observacionController.text
-                                .trim();
-
-                            if (aprobar && !documentoRevisado) {
-                              _mensaje(
-                                'Debes revisar y verificar '
-                                'el documento antes de aprobar.',
-                                error: true,
-                              );
-                              return;
-                            }
-
-                            if (!aprobar && observacion.length < 10) {
-                              _mensaje(
-                                'Explica el rechazo con al '
-                                'menos 10 caracteres.',
-                                error: true,
-                              );
-                              return;
-                            }
-
-                            actualizarDialogo(() {
-                              enviandoDialogo = true;
-                            });
-
-                            setState(() {
-                              _procesando = true;
-                            });
-
-                            try {
-                              final mensaje = await _service.revisarSolicitud(
-                                idSolicitud: idSolicitud,
-                                decision: decision,
-                                observacion: observacion,
-                              );
-
-                              if (!dialogContext.mounted) {
-                                return;
-                              }
-
-                              Navigator.of(dialogContext).pop();
-
-                              _mensaje(mensaje);
-                              _cargar();
-                            } catch (error) {
-                              _mensaje(
-                                error.toString().replaceFirst(
-                                  'Exception: ',
-                                  '',
-                                ),
-                                error: true,
-                              );
-
-                              if (dialogContext.mounted) {
-                                actualizarDialogo(() {
-                                  enviandoDialogo = false;
-                                });
-                              }
-                            } finally {
-                              if (mounted) {
-                                setState(() {
-                                  _procesando = false;
-                                });
-                              }
-                            }
-                          },
+                    onPressed: () {
+                      final observacion = observacionController.text.trim();
+                      if (aprobar && !documentoRevisado) {
+                        _mensaje(
+                          'Debes revisar y verificar el documento antes de aprobar.',
+                          error: true,
+                        );
+                        return;
+                      }
+                      if (!aprobar && observacion.length < 10) {
+                        _mensaje(
+                          'Explica el rechazo con al menos 10 caracteres.',
+                          error: true,
+                        );
+                        return;
+                      }
+                      Navigator.of(dialogContext).pop(observacion);
+                    },
                     child: Text(
-                      enviandoDialogo
-                          ? 'Guardando...'
-                          : aprobar
-                          ? 'Confirmar aprobación'
-                          : 'Confirmar rechazo',
+                      aprobar ? 'Confirmar aprobación' : 'Confirmar rechazo',
                     ),
                   ),
                 ],
@@ -340,11 +267,39 @@ class _AdminProfessionalRequestsScreenState
         },
       );
     } finally {
-      // Se libera después de cerrar el diálogo.
       observacionController.dispose();
+    }
+
+    // Si el administrador canceló, no se envía nada al backend.
+    if (!mounted || observacionConfirmada == null) return;
+
+    setState(() {
+      _procesando = true;
+    });
+
+    try {
+      final mensaje = await _service.revisarSolicitud(
+        idSolicitud: idSolicitud,
+        decision: decision,
+        observacion: observacionConfirmada,
+      );
+
+      if (!mounted) return;
+      _mensaje(mensaje);
+      _cargar();
+    } catch (error) {
+      if (!mounted) return;
+      _mensaje(error.toString().replaceFirst('Exception: ', ''), error: true);
+    } finally {
+      if (mounted) {
+        setState(() {
+          _procesando = false;
+        });
+      }
     }
   }
 
+  // ==========================================
   // ==========================================
   // TARJETAS DE SOLICITUDES
   // ==========================================

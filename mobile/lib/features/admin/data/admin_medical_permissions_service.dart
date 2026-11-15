@@ -1,4 +1,3 @@
-
 import 'dart:convert';
 
 import 'package:http/http.dart' as http;
@@ -19,9 +18,7 @@ class AdminMedicalPermissionsService {
     final token = await SecureSessionStorage.obtenerToken();
 
     if (token == null || token.isEmpty) {
-      throw Exception(
-        'Tu sesión ha terminado. Inicia sesión nuevamente.',
-      );
+      throw Exception('Tu sesión ha terminado. Inicia sesión nuevamente.');
     }
 
     return {
@@ -35,9 +32,7 @@ class AdminMedicalPermissionsService {
   // LEER RESPUESTA DEL SERVIDOR
   // ==========================================
 
-  Map<String, dynamic> _leerRespuesta(
-    http.Response respuesta,
-  ) {
+  Map<String, dynamic> _leerRespuesta(http.Response respuesta) {
     try {
       final datos = jsonDecode(respuesta.body);
 
@@ -48,9 +43,7 @@ class AdminMedicalPermissionsService {
       // La respuesta no contiene un JSON válido.
     }
 
-    throw Exception(
-      'El servidor devolvió una respuesta inválida.',
-    );
+    throw Exception('El servidor devolvió una respuesta inválida.');
   }
 
   // ==========================================
@@ -58,16 +51,11 @@ class AdminMedicalPermissionsService {
   // ==========================================
 
   Future<List<Map<String, dynamic>>> obtenerPermisosMedicos() async {
-    final uri = Uri.parse(
-      '${ApiConfig.baseUrl}/api/admin/medical-permissions',
-    );
+    final uri = Uri.parse('${ApiConfig.baseUrl}/api/admin/medical-permissions');
 
     try {
       final respuesta = await http
-          .get(
-            uri,
-            headers: await _headers(),
-          )
+          .get(uri, headers: await _headers())
           .timeout(const Duration(seconds: 15));
 
       final datos = _leerRespuesta(respuesta);
@@ -89,9 +77,7 @@ class AdminMedicalPermissionsService {
 
       return permisos.map<Map<String, dynamic>>((permiso) {
         if (permiso is! Map<String, dynamic>) {
-          throw Exception(
-            'Se recibió un permiso médico inválido.',
-          );
+          throw Exception('Se recibió un permiso médico inválido.');
         }
 
         return permiso;
@@ -99,9 +85,7 @@ class AdminMedicalPermissionsService {
     } on Exception {
       rethrow;
     } catch (_) {
-      throw Exception(
-        'Ocurrió un error al consultar los permisos médicos.',
-      );
+      throw Exception('Ocurrió un error al consultar los permisos médicos.');
     }
   }
 }
