@@ -1,5 +1,5 @@
-
 import 'package:flutter/material.dart';
+
 import '../../../../core/theme/app_theme.dart';
 import 'login_screen.dart';
 import 'register_screen.dart';
@@ -12,10 +12,7 @@ class WelcomeScreen extends StatelessWidget {
     return Scaffold(
       body: SafeArea(
         child: Padding(
-          padding: const EdgeInsets.symmetric(
-            horizontal: 28,
-            vertical: 24,
-          ),
+          padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 24),
           child: Column(
             children: [
               const Spacer(),
@@ -77,9 +74,7 @@ class WelcomeScreen extends StatelessWidget {
                 onPressed: () {
                   Navigator.push(
                     context,
-                    MaterialPageRoute(
-                      builder: (_) => const LoginScreen(),
-                    ),
+                    MaterialPageRoute(builder: (_) => const LoginScreen()),
                   );
                 },
                 child: const Text(
@@ -94,17 +89,13 @@ class WelcomeScreen extends StatelessWidget {
                 onPressed: () {
                   Navigator.push(
                     context,
-                    MaterialPageRoute(
-                      builder: (_) => const RegisterScreen(),
-                    ),
+                    MaterialPageRoute(builder: (_) => const RegisterScreen()),
                   );
                 },
                 style: OutlinedButton.styleFrom(
                   minimumSize: const Size.fromHeight(54),
                   foregroundColor: AppTheme.primary,
-                  side: const BorderSide(
-                    color: AppTheme.primary,
-                  ),
+                  side: const BorderSide(color: AppTheme.primary),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(16),
                   ),
@@ -118,12 +109,9 @@ class WelcomeScreen extends StatelessWidget {
               const SizedBox(height: 22),
 
               const Text(
-                'Protección y privacidad de tus datos médicos',
+                'Protección y privacidad de tus datos',
                 textAlign: TextAlign.center,
-                style: TextStyle(
-                  fontSize: 12,
-                  color: Colors.black45,
-                ),
+                style: TextStyle(fontSize: 12, color: Colors.black45),
               ),
             ],
           ),
