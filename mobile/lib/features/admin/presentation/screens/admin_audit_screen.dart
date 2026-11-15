@@ -232,7 +232,7 @@ class _AdminAuditScreenState extends State<AdminAuditScreen> {
           SizedBox(height: 10),
           Text(
             'Consulta las acciones realizadas por los '
-            'usuarios dentro de CipherMed.',
+            'usuarios.',
             style: TextStyle(
               fontSize: 14,
               height: 1.5,

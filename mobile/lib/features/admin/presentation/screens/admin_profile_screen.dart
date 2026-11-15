@@ -1,5 +1,11 @@
-import 'package:flutter/material.dart';
+import 'dart:async';
+import 'dart:convert';
 
+import 'package:flutter/material.dart';
+import 'package:http/http.dart' as http;
+
+import '../../../../core/network/api_config.dart';
+import '../../../../core/storage/secure_session_storage.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../auth/data/auth_service.dart';
 import '../../../auth/presentation/screens/account_security_screen.dart';
@@ -14,9 +20,9 @@ class AdminProfileScreen extends StatefulWidget {
 
 class _AdminProfileScreenState extends State<AdminProfileScreen> {
   final _authService = AuthService();
-
   late Future<Map<String, dynamic>> _perfil;
   bool _cerrandoSesion = false;
+  bool _guardando = false;
 
   @override
   void initState() {
@@ -30,13 +36,24 @@ class _AdminProfileScreenState extends State<AdminProfileScreen> {
     });
   }
 
+  void _mensaje(String mensaje, {bool error = false}) {
+    if (!mounted) {
+      return;
+    }
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(mensaje),
+        backgroundColor: error ? Colors.redAccent : AppTheme.primary,
+      ),
+    );
+  }
+
   Widget _campo({
     required String titulo,
     required String valor,
     required IconData icono,
   }) {
     final texto = valor.trim().isEmpty ? 'No registrado' : valor;
-
     return Padding(
       padding: const EdgeInsets.only(bottom: 15),
       child: TextFormField(
@@ -54,9 +71,201 @@ class _AdminProfileScreenState extends State<AdminProfileScreen> {
     );
   }
 
-  Future<void> _cerrarSesion() async {
-    if (_cerrandoSesion) return;
+  Future<void> _actualizarDatos({
+    required String nombre,
+    required String apellido,
+    required String telefono,
+  }) async {
+    final token = await SecureSessionStorage.obtenerToken();
+    if (token == null || token.isEmpty) {
+      throw Exception('Debes iniciar sesión nuevamente.');
+    }
 
+    final respuesta = await http
+        .patch(
+          Uri.parse('${ApiConfig.baseUrl}/api/auth/me'),
+          headers: {
+            'Authorization': 'Bearer $token',
+            'Accept': 'application/json',
+            'Content-Type': 'application/json',
+          },
+          body: jsonEncode({
+            'nombre': nombre,
+            'apellido': apellido,
+            'telefono': telefono,
+          }),
+        )
+        .timeout(const Duration(seconds: 20));
+
+    Map<String, dynamic> datos = {};
+    try {
+      final decodificado = jsonDecode(respuesta.body);
+      if (decodificado is Map<String, dynamic>) {
+        datos = decodificado;
+      }
+    } on FormatException {
+      if (respuesta.statusCode >= 200 && respuesta.statusCode < 300) {
+        throw Exception('El servidor devolvió una respuesta no válida.');
+      }
+    }
+
+    if (respuesta.statusCode < 200 || respuesta.statusCode >= 300) {
+      throw Exception(
+        datos['message']?.toString() ?? 'No fue posible guardar los cambios.',
+      );
+    }
+  }
+
+  Future<void> _editarDatos(Map usuario) async {
+    if (_guardando) {
+      return;
+    }
+
+    final nombreController = TextEditingController(
+      text: '${usuario['nombre'] ?? ''}',
+    );
+    final apellidoController = TextEditingController(
+      text: '${usuario['apellido'] ?? ''}',
+    );
+    final telefonoController = TextEditingController(
+      text: '${usuario['telefono'] ?? ''}',
+    );
+    final formKey = GlobalKey<FormState>();
+    bool enviando = false;
+
+    try {
+      await showDialog<void>(
+        context: context,
+        barrierDismissible: false,
+        builder: (dialogContext) => StatefulBuilder(
+          builder: (dialogContext, actualizarDialogo) => AlertDialog(
+            title: const Text('Editar mis datos'),
+            content: SingleChildScrollView(
+              child: Form(
+                key: formKey,
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    TextFormField(
+                      controller: nombreController,
+                      enabled: !enviando,
+                      maxLength: 100,
+                      textCapitalization: TextCapitalization.words,
+                      decoration: const InputDecoration(
+                        labelText: 'Nombre',
+                        prefixIcon: Icon(Icons.person_outline),
+                      ),
+                      validator: (valor) {
+                        final texto = (valor ?? '').trim();
+                        return texto.length < 2
+                            ? 'Escribe un nombre válido.'
+                            : null;
+                      },
+                    ),
+                    TextFormField(
+                      controller: apellidoController,
+                      enabled: !enviando,
+                      maxLength: 100,
+                      textCapitalization: TextCapitalization.words,
+                      decoration: const InputDecoration(
+                        labelText: 'Apellido',
+                        prefixIcon: Icon(Icons.badge_outlined),
+                      ),
+                      validator: (valor) {
+                        final texto = (valor ?? '').trim();
+                        return texto.length < 2
+                            ? 'Escribe un apellido válido.'
+                            : null;
+                      },
+                    ),
+                    TextFormField(
+                      controller: telefonoController,
+                      enabled: !enviando,
+                      maxLength: 20,
+                      keyboardType: TextInputType.phone,
+                      decoration: const InputDecoration(
+                        labelText: 'Teléfono',
+                        prefixIcon: Icon(Icons.phone_outlined),
+                      ),
+                      validator: (valor) {
+                        final texto = (valor ?? '').trim();
+                        if (texto.isNotEmpty &&
+                            !RegExp(r'^\+?[0-9 ]{7,20}$').hasMatch(texto)) {
+                          return 'Escribe un teléfono válido.';
+                        }
+                        return null;
+                      },
+                    ),
+                    const SizedBox(height: 8),
+                    const Text(
+                      'El correo electrónico y el estado de la cuenta no se modifican aquí.',
+                      style: TextStyle(fontSize: 12, color: Colors.black54),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            actions: [
+              TextButton(
+                onPressed: enviando ? null : () => Navigator.pop(dialogContext),
+                child: const Text('Cancelar'),
+              ),
+              ElevatedButton(
+                onPressed: enviando
+                    ? null
+                    : () async {
+                        if (!(formKey.currentState?.validate() ?? false)) {
+                          return;
+                        }
+                        actualizarDialogo(() => enviando = true);
+                        if (mounted) {
+                          setState(() => _guardando = true);
+                        }
+                        try {
+                          await _actualizarDatos(
+                            nombre: nombreController.text.trim(),
+                            apellido: apellidoController.text.trim(),
+                            telefono: telefonoController.text.trim(),
+                          );
+                          if (!dialogContext.mounted) {
+                            return;
+                          }
+                          Navigator.pop(dialogContext);
+                          _recargar();
+                          _mensaje('Tus datos personales fueron actualizados.');
+                        } catch (error) {
+                          _mensaje(
+                            error.toString().replaceFirst('Exception: ', ''),
+                            error: true,
+                          );
+                          if (dialogContext.mounted) {
+                            actualizarDialogo(() => enviando = false);
+                          }
+                        } finally {
+                          if (mounted) {
+                            setState(() => _guardando = false);
+                          }
+                        }
+                      },
+                child: Text(enviando ? 'Guardando...' : 'Guardar cambios'),
+              ),
+            ],
+          ),
+        ),
+      );
+    } finally {
+      // Evita liberar los controladores durante la animación de cierre.
+      await Future<void>.delayed(const Duration(milliseconds: 350));
+      nombreController.dispose();
+      apellidoController.dispose();
+      telefonoController.dispose();
+    }
+  }
+
+  Future<void> _cerrarSesion() async {
+    if (_cerrandoSesion) {
+      return;
+    }
     final confirmar = await showDialog<bool>(
       context: context,
       builder: (dialogContext) => AlertDialog(
@@ -79,36 +288,24 @@ class _AdminProfileScreenState extends State<AdminProfileScreen> {
         ],
       ),
     );
-
-    if (confirmar != true || !mounted) return;
-
-    setState(() {
-      _cerrandoSesion = true;
-    });
-
+    if (confirmar != true || !mounted) {
+      return;
+    }
+    setState(() => _cerrandoSesion = true);
     try {
       await _authService.cerrarSesion();
-
-      if (!mounted) return;
-
+      if (!mounted) {
+        return;
+      }
       Navigator.of(context).pushAndRemoveUntil(
         MaterialPageRoute<void>(builder: (_) => const WelcomeScreen()),
         (route) => false,
       );
     } catch (error) {
-      if (!mounted) return;
-
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(error.toString().replaceFirst('Exception: ', '')),
-          backgroundColor: Colors.redAccent,
-        ),
-      );
+      _mensaje(error.toString().replaceFirst('Exception: ', ''), error: true);
     } finally {
       if (mounted) {
-        setState(() {
-          _cerrandoSesion = false;
-        });
+        setState(() => _cerrandoSesion = false);
       }
     }
   }
@@ -118,7 +315,7 @@ class _AdminProfileScreenState extends State<AdminProfileScreen> {
     return Scaffold(
       backgroundColor: const Color(0xFFF4FAFC),
       appBar: AppBar(
-        title: const Text('Mi perfil de administrador'),
+        title: const Text('Mi perfil'),
         centerTitle: true,
         backgroundColor: const Color(0xFFE0F2F5),
         actions: [
@@ -135,7 +332,6 @@ class _AdminProfileScreenState extends State<AdminProfileScreen> {
           if (snapshot.connectionState != ConnectionState.done) {
             return const Center(child: CircularProgressIndicator());
           }
-
           if (snapshot.hasError || !snapshot.hasData) {
             return Center(
               child: Padding(
@@ -164,15 +360,12 @@ class _AdminProfileScreenState extends State<AdminProfileScreen> {
           }
 
           final usuario = snapshot.data!['usuario'];
-
           if (usuario is! Map) {
             return const Center(
               child: Text('El servidor no devolvió un perfil válido.'),
             );
           }
-
           String dato(String clave) => '${usuario[clave] ?? ''}';
-
           final nombreCompleto = '${dato('nombre')} ${dato('apellido')}'.trim();
 
           return ListView(
@@ -207,7 +400,7 @@ class _AdminProfileScreenState extends State<AdminProfileScreen> {
                     ),
                     const SizedBox(height: 8),
                     const Text(
-                      'Administrador de CipherMed',
+                      'Administrador',
                       style: TextStyle(color: Colors.white, fontSize: 16),
                     ),
                   ],
@@ -248,7 +441,21 @@ class _AdminProfileScreenState extends State<AdminProfileScreen> {
                 valor: dato('estado'),
                 icono: Icons.verified_user_outlined,
               ),
-              const SizedBox(height: 15),
+              const SizedBox(height: 4),
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton.icon(
+                  onPressed: _guardando ? null : () => _editarDatos(usuario),
+                  icon: const Icon(Icons.edit_outlined),
+                  label: const Text('Editar mis datos'),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppTheme.primary,
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(vertical: 16),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 28),
               const Text(
                 'Privacidad y seguridad',
                 style: TextStyle(
@@ -292,9 +499,7 @@ class _AdminProfileScreenState extends State<AdminProfileScreen> {
               ),
               const SizedBox(height: 20),
               const Text(
-                'Las acciones administrativas deben estar '
-                'protegidas y registradas para garantizar '
-                'la seguridad de CipherMed.',
+                'Las acciones administrativas deben estar protegidas y registradas para garantizar su seguridad.',
                 textAlign: TextAlign.center,
                 style: TextStyle(color: Colors.black54, fontSize: 13),
               ),

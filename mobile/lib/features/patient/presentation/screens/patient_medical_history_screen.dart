@@ -5,6 +5,7 @@ import '../../data/medical_history_service.dart';
 import '../../data/correction_request_service.dart';
 import 'patient_correction_requests_screen.dart';
 import 'patient_correction_result_screen.dart';
+import '../../data/patient_medical_pdf_service.dart';
 
 // =====================================================
 // PANTALLA PRINCIPAL: HISTORIAL MÉDICO DEL PACIENTE
@@ -20,6 +21,37 @@ class PatientMedicalHistoryScreen extends StatefulWidget {
 
 class _PatientMedicalHistoryScreenState
     extends State<PatientMedicalHistoryScreen> {
+  final PatientMedicalPdfService _pdfService = PatientMedicalPdfService();
+
+  int? _historialDescargando;
+
+  Future<void> _descargarPdf(int idHistorial) async {
+    if (_historialDescargando != null) return;
+
+    setState(() {
+      _historialDescargando = idHistorial;
+    });
+
+    try {
+      await _pdfService.descargarHistorial(idHistorial: idHistorial);
+    } catch (error) {
+      if (!mounted) return;
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(error.toString().replaceFirst('Exception: ', '')),
+          backgroundColor: Colors.redAccent,
+        ),
+      );
+    } finally {
+      if (mounted) {
+        setState(() {
+          _historialDescargando = null;
+        });
+      }
+    }
+  }
+
   final MedicalHistoryService _service = MedicalHistoryService();
 
   final CorrectionRequestService _correctionService =
@@ -524,6 +556,41 @@ class _PatientMedicalHistoryScreenState
                   backgroundColor: AppTheme.primary,
                   foregroundColor: Colors.white,
                   padding: const EdgeInsets.symmetric(vertical: 14),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
+              ),
+            ),
+
+            // BOTÓN PARA DESCARGAR EL HISTORIAL EN PDF
+            const SizedBox(height: 10),
+
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton.icon(
+                onPressed: idHistorial == null || _historialDescargando != null
+                    ? null
+                    : () => _descargarPdf(idHistorial),
+                icon: _historialDescargando == idHistorial
+                    ? const SizedBox(
+                        width: 19,
+                        height: 19,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          color: Colors.white,
+                        ),
+                      )
+                    : const Icon(Icons.picture_as_pdf_outlined),
+                label: Text(
+                  _historialDescargando == idHistorial
+                      ? 'Preparando documento...'
+                      : 'Descargar historial en PDF',
+                ),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppTheme.dark,
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(vertical: 15),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(12),
                   ),

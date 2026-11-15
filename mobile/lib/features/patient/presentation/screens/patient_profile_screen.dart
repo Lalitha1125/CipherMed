@@ -15,11 +15,12 @@ class PatientProfileScreen extends StatefulWidget {
 
 class _PatientProfileScreenState extends State<PatientProfileScreen> {
   final _formKey = GlobalKey<FormState>();
-  final _service = PatientProfileService();
+  final PatientProfileService _service = PatientProfileService();
+  final AuthService _authService = AuthService();
 
-  final _nombre = TextEditingController();
-  final _apellido = TextEditingController();
-  final _telefono = TextEditingController();
+  final TextEditingController _nombre = TextEditingController();
+  final TextEditingController _apellido = TextEditingController();
+  final TextEditingController _telefono = TextEditingController();
 
   String _correo = '';
   String _estado = '';
@@ -46,7 +47,25 @@ class _PatientProfileScreenState extends State<PatientProfileScreen> {
     super.dispose();
   }
 
+  String _dato(dynamic valor) {
+    return '${valor ?? ''}'.trim();
+  }
+
+  String _formatearFecha(dynamic valor) {
+    final fecha = DateTime.tryParse(_dato(valor));
+
+    if (fecha == null) {
+      return 'No disponible';
+    }
+
+    String dos(int numero) => numero.toString().padLeft(2, '0');
+
+    return '${dos(fecha.day)}/${dos(fecha.month)}/${fecha.year}';
+  }
+
   Future<void> _cargarPerfil() async {
+    if (_guardando || _cerrandoSesion) return;
+
     setState(() {
       _cargando = true;
       _error = null;
@@ -57,25 +76,14 @@ class _PatientProfileScreenState extends State<PatientProfileScreen> {
 
       if (!mounted) return;
 
-      final fecha = usuario['fechaRegistro'];
-      final fechaParseada = DateTime.tryParse('${fecha ?? ''}');
-
       setState(() {
-        _nombre.text = '${usuario['nombre'] ?? ''}';
-        _apellido.text = '${usuario['apellido'] ?? ''}';
-        _telefono.text = '${usuario['telefono'] ?? ''}';
+        _nombre.text = _dato(usuario['nombre']);
+        _apellido.text = _dato(usuario['apellido']);
+        _telefono.text = _dato(usuario['telefono']);
 
-        _correo = '${usuario['correo'] ?? ''}';
-        _estado = '${usuario['estado'] ?? ''}';
-
-        if (fechaParseada != null) {
-          _fechaRegistro =
-              '${fechaParseada.day.toString().padLeft(2, '0')}/'
-              '${fechaParseada.month.toString().padLeft(2, '0')}/'
-              '${fechaParseada.year}';
-        } else {
-          _fechaRegistro = 'No disponible';
-        }
+        _correo = _dato(usuario['correo']);
+        _estado = _dato(usuario['estado']);
+        _fechaRegistro = _formatearFecha(usuario['fechaRegistro']);
 
         _cargando = false;
         _editando = false;
@@ -91,12 +99,17 @@ class _PatientProfileScreenState extends State<PatientProfileScreen> {
   }
 
   Future<void> _guardarPerfil() async {
-    if (_guardando || !_formKey.currentState!.validate()) {
+    if (_guardando || _cerrandoSesion || !_formKey.currentState!.validate()) {
       return;
     }
 
     FocusScope.of(context).unfocus();
-    setState(() => _guardando = true);
+
+    setState(() {
+      _guardando = true;
+    });
+
+    var guardado = false;
 
     try {
       await _service.actualizarPerfil(
@@ -105,13 +118,17 @@ class _PatientProfileScreenState extends State<PatientProfileScreen> {
         telefono: _telefono.text.trim(),
       );
 
+      guardado = true;
+
       if (!mounted) return;
+
+      setState(() {
+        _editando = false;
+      });
 
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Perfil actualizado correctamente.')),
       );
-
-      await _cargarPerfil();
     } catch (error) {
       if (!mounted) return;
 
@@ -123,26 +140,34 @@ class _PatientProfileScreenState extends State<PatientProfileScreen> {
       );
     } finally {
       if (mounted) {
-        setState(() => _guardando = false);
+        setState(() {
+          _guardando = false;
+        });
       }
+    }
+
+    if (guardado && mounted) {
+      await _cargarPerfil();
     }
   }
 
   Future<void> _cerrarSesion() async {
-    if (_cerrandoSesion) return;
+    if (_cerrandoSesion || _guardando) return;
 
     final confirmar = await showDialog<bool>(
       context: context,
       builder: (dialogContext) => AlertDialog(
         title: const Text('Cerrar sesión'),
-        content: const Text('¿Estás segura de que deseas salir de CipherMed?'),
+        content: const Text(
+          '¿Deseas cerrar tu sesión de paciente en CipherMed?',
+        ),
         actions: [
           TextButton(
-            onPressed: () => Navigator.of(dialogContext).pop(false),
+            onPressed: () => Navigator.pop(dialogContext, false),
             child: const Text('Cancelar'),
           ),
           TextButton(
-            onPressed: () => Navigator.of(dialogContext).pop(true),
+            onPressed: () => Navigator.pop(dialogContext, true),
             child: const Text(
               'Cerrar sesión',
               style: TextStyle(color: Colors.redAccent),
@@ -154,10 +179,12 @@ class _PatientProfileScreenState extends State<PatientProfileScreen> {
 
     if (confirmar != true || !mounted) return;
 
-    setState(() => _cerrandoSesion = true);
+    setState(() {
+      _cerrandoSesion = true;
+    });
 
     try {
-      await AuthService().cerrarSesion();
+      await _authService.cerrarSesion();
 
       if (!mounted) return;
 
@@ -176,35 +203,79 @@ class _PatientProfileScreenState extends State<PatientProfileScreen> {
       );
     } finally {
       if (mounted) {
-        setState(() => _cerrandoSesion = false);
+        setState(() {
+          _cerrandoSesion = false;
+        });
       }
     }
   }
 
-  Widget _campo({
-    required String etiqueta,
+  Widget _encabezado() {
+    final nombreCompleto = '${_nombre.text.trim()} ${_apellido.text.trim()}'
+        .trim();
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(25),
+      decoration: BoxDecoration(
+        color: AppTheme.primary,
+        borderRadius: BorderRadius.circular(22),
+      ),
+      child: Column(
+        children: [
+          const CircleAvatar(
+            radius: 40,
+            backgroundColor: Colors.white,
+            child: Icon(
+              Icons.person_rounded,
+              color: AppTheme.primary,
+              size: 44,
+            ),
+          ),
+          const SizedBox(height: 18),
+          Text(
+            nombreCompleto.isEmpty ? 'Paciente' : nombreCompleto,
+            textAlign: TextAlign.center,
+            style: const TextStyle(
+              fontSize: 24,
+              fontWeight: FontWeight.bold,
+              color: Colors.white,
+            ),
+          ),
+          const SizedBox(height: 8),
+          const Text(
+            'Paciente',
+            textAlign: TextAlign.center,
+            style: TextStyle(color: Colors.white, fontSize: 16),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _campoEditable({
+    required String titulo,
     required TextEditingController controlador,
     required IconData icono,
     required int maximo,
     bool esTelefono = false,
   }) {
     return Padding(
-      padding: const EdgeInsets.only(bottom: 16),
+      padding: const EdgeInsets.only(bottom: 15),
       child: TextFormField(
         controller: controlador,
-        enabled: _editando && !_guardando,
+        readOnly: !_editando || _guardando,
         maxLength: _editando ? maximo : null,
         keyboardType: esTelefono ? TextInputType.phone : TextInputType.name,
+        textCapitalization: esTelefono
+            ? TextCapitalization.none
+            : TextCapitalization.words,
         decoration: InputDecoration(
-          labelText: etiqueta,
+          labelText: titulo,
           prefixIcon: Icon(icono, color: AppTheme.primary),
           filled: true,
           fillColor: Colors.white,
           border: OutlineInputBorder(borderRadius: BorderRadius.circular(14)),
-          disabledBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(14),
-            borderSide: const BorderSide(color: Color(0xFFCADDE3)),
-          ),
         ),
         validator: (valor) {
           final texto = (valor ?? '').trim();
@@ -225,21 +296,22 @@ class _PatientProfileScreenState extends State<PatientProfileScreen> {
     );
   }
 
-  // Recuadros con la misma apariencia del teléfono.
-  Widget _campoSoloLectura({
-    required String etiqueta,
+  Widget _campoLectura({
+    required String titulo,
     required String valor,
     required IconData icono,
   }) {
+    final texto = valor.isEmpty ? 'No registrado' : valor;
+
     return Padding(
-      padding: const EdgeInsets.only(bottom: 16),
+      padding: const EdgeInsets.only(bottom: 15),
       child: TextFormField(
-        key: ValueKey('$etiqueta:$valor'),
-        initialValue: valor.isEmpty ? 'No registrado' : valor,
+        key: ValueKey('$titulo:$texto'),
+        initialValue: texto,
         readOnly: true,
         enableInteractiveSelection: true,
         decoration: InputDecoration(
-          labelText: etiqueta,
+          labelText: titulo,
           prefixIcon: Icon(icono, color: AppTheme.primary),
           filled: true,
           fillColor: Colors.white,
@@ -249,27 +321,15 @@ class _PatientProfileScreenState extends State<PatientProfileScreen> {
     );
   }
 
-  Widget _tarjetaSeguridad() {
+  Widget _seguridad() {
     return Card(
-      elevation: 0,
       color: Colors.white,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(18),
-        side: const BorderSide(color: Color(0xFFE0EBEF)),
-      ),
       child: ListTile(
-        contentPadding: const EdgeInsets.all(16),
-        leading: const CircleAvatar(
-          backgroundColor: Color(0xFFE0F2F5),
-          child: Icon(Icons.security_rounded, color: AppTheme.primary),
-        ),
-        title: const Text(
-          'Seguridad de mi cuenta',
-          style: TextStyle(fontWeight: FontWeight.bold, color: AppTheme.dark),
-        ),
-        subtitle: const Text('Cambiar mi contraseña.'),
+        leading: const Icon(Icons.security_rounded, color: AppTheme.primary),
+        title: const Text('Seguridad de mi cuenta'),
+        subtitle: const Text('Cambiar mi contraseña'),
         trailing: const Icon(Icons.chevron_right_rounded),
-        onTap: _guardando
+        onTap: _guardando || _cerrandoSesion
             ? null
             : () {
                 Navigator.of(context).push(
@@ -282,16 +342,117 @@ class _PatientProfileScreenState extends State<PatientProfileScreen> {
     );
   }
 
-  Widget _botonCerrarSesion() {
-    return OutlinedButton.icon(
-      onPressed: _cerrandoSesion || _guardando ? null : _cerrarSesion,
-      icon: const Icon(Icons.logout_rounded),
-      label: Text(_cerrandoSesion ? 'Cerrando sesión...' : 'Cerrar sesión'),
-      style: OutlinedButton.styleFrom(
-        foregroundColor: Colors.redAccent,
-        side: const BorderSide(color: Colors.redAccent),
-        padding: const EdgeInsets.symmetric(vertical: 17),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+  Widget _contenidoPerfil() {
+    return Form(
+      key: _formKey,
+      child: ListView(
+        padding: const EdgeInsets.all(22),
+        children: [
+          _encabezado(),
+          const SizedBox(height: 28),
+          const Text(
+            'Mis datos personales',
+            style: TextStyle(
+              fontSize: 21,
+              fontWeight: FontWeight.bold,
+              color: AppTheme.dark,
+            ),
+          ),
+          const SizedBox(height: 18),
+          _campoEditable(
+            titulo: 'Nombre',
+            controlador: _nombre,
+            icono: Icons.person_outline,
+            maximo: 100,
+          ),
+          _campoEditable(
+            titulo: 'Apellido',
+            controlador: _apellido,
+            icono: Icons.badge_outlined,
+            maximo: 100,
+          ),
+          _campoLectura(
+            titulo: 'Correo electrónico',
+            valor: _correo,
+            icono: Icons.email_outlined,
+          ),
+          _campoEditable(
+            titulo: 'Teléfono',
+            controlador: _telefono,
+            icono: Icons.phone_outlined,
+            maximo: 20,
+            esTelefono: true,
+          ),
+          _campoLectura(
+            titulo: 'Estado de la cuenta',
+            valor: _estado,
+            icono: Icons.verified_user_outlined,
+          ),
+          _campoLectura(
+            titulo: 'Fecha de registro',
+            valor: _fechaRegistro,
+            icono: Icons.calendar_month_outlined,
+          ),
+          const SizedBox(height: 15),
+
+          if (!_editando)
+            ElevatedButton.icon(
+              onPressed: _cerrandoSesion
+                  ? null
+                  : () {
+                      setState(() {
+                        _editando = true;
+                      });
+                    },
+              icon: const Icon(Icons.edit_outlined),
+              label: const Text('Editar perfil'),
+            )
+          else ...[
+            ElevatedButton.icon(
+              onPressed: _guardando ? null : _guardarPerfil,
+              icon: const Icon(Icons.save_outlined),
+              label: Text(_guardando ? 'Guardando...' : 'Guardar cambios'),
+            ),
+            const SizedBox(height: 10),
+            OutlinedButton(
+              onPressed: _guardando ? null : _cargarPerfil,
+              child: const Text('Cancelar'),
+            ),
+          ],
+
+          const SizedBox(height: 30),
+          const Text(
+            'Privacidad y seguridad',
+            style: TextStyle(
+              fontSize: 20,
+              fontWeight: FontWeight.bold,
+              color: AppTheme.dark,
+            ),
+          ),
+          const SizedBox(height: 14),
+          _seguridad(),
+          const SizedBox(height: 24),
+
+          OutlinedButton.icon(
+            onPressed: _cerrandoSesion || _guardando ? null : _cerrarSesion,
+            icon: const Icon(Icons.logout_rounded),
+            label: Text(
+              _cerrandoSesion ? 'Cerrando sesión...' : 'Cerrar sesión',
+            ),
+            style: OutlinedButton.styleFrom(
+              foregroundColor: Colors.redAccent,
+              side: const BorderSide(color: Colors.redAccent),
+              padding: const EdgeInsets.symmetric(vertical: 17),
+            ),
+          ),
+          const SizedBox(height: 20),
+          const Text(
+            'CipherMed protege tu información '
+            'personal y médica.',
+            textAlign: TextAlign.center,
+            style: TextStyle(color: Colors.black54, fontSize: 13),
+          ),
+        ],
       ),
     );
   }
@@ -306,163 +467,42 @@ class _PatientProfileScreenState extends State<PatientProfileScreen> {
         backgroundColor: const Color(0xFFE0F2F5),
         actions: [
           IconButton(
-            tooltip: 'Actualizar información',
-            onPressed: _cargando || _guardando || _editando
+            tooltip: 'Actualizar perfil',
+            onPressed: _cargando || _guardando || _editando || _cerrandoSesion
                 ? null
                 : _cargarPerfil,
             icon: const Icon(Icons.refresh_rounded),
           ),
         ],
       ),
-      body: _cargando
-          ? const Center(child: CircularProgressIndicator())
-          : _error != null
-          ? Center(
-              child: Padding(
-                padding: const EdgeInsets.all(24),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Text(_error!, textAlign: TextAlign.center),
-                    const SizedBox(height: 16),
-                    ElevatedButton(
-                      onPressed: _cargarPerfil,
-                      child: const Text('Reintentar'),
-                    ),
-                  ],
-                ),
-              ),
-            )
-          : SingleChildScrollView(
-              padding: const EdgeInsets.all(22),
-              child: Form(
-                key: _formKey,
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    const CircleAvatar(
-                      radius: 42,
-                      backgroundColor: Color(0xFFE0F2F5),
-                      child: Icon(
-                        Icons.person_rounded,
-                        size: 48,
-                        color: AppTheme.primary,
+      body: SafeArea(
+        child: _cargando
+            ? const Center(child: CircularProgressIndicator())
+            : _error != null
+            ? Center(
+                child: SingleChildScrollView(
+                  padding: const EdgeInsets.all(24),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const Icon(
+                        Icons.error_outline_rounded,
+                        size: 42,
+                        color: Colors.redAccent,
                       ),
-                    ),
-
-                    const SizedBox(height: 18),
-
-                    const Center(
-                      child: Text(
-                        'Mis datos personales',
-                        style: TextStyle(
-                          fontSize: 23,
-                          fontWeight: FontWeight.bold,
-                          color: AppTheme.dark,
-                        ),
-                      ),
-                    ),
-
-                    const SizedBox(height: 25),
-
-                    _campo(
-                      etiqueta: 'Nombre',
-                      controlador: _nombre,
-                      icono: Icons.person_outline,
-                      maximo: 100,
-                    ),
-
-                    _campo(
-                      etiqueta: 'Apellido',
-                      controlador: _apellido,
-                      icono: Icons.badge_outlined,
-                      maximo: 100,
-                    ),
-
-                    _campo(
-                      etiqueta: 'Teléfono',
-                      controlador: _telefono,
-                      icono: Icons.phone_outlined,
-                      maximo: 20,
-                      esTelefono: true,
-                    ),
-
-                    _campoSoloLectura(
-                      etiqueta: 'Correo electrónico',
-                      valor: _correo,
-                      icono: Icons.email_outlined,
-                    ),
-
-                    _campoSoloLectura(
-                      etiqueta: 'Estado de la cuenta',
-                      valor: _estado,
-                      icono: Icons.verified_user_outlined,
-                    ),
-
-                    _campoSoloLectura(
-                      etiqueta: 'Fecha de registro',
-                      valor: _fechaRegistro,
-                      icono: Icons.calendar_month_outlined,
-                    ),
-
-                    const SizedBox(height: 14),
-
-                    if (!_editando)
-                      ElevatedButton.icon(
-                        onPressed: () {
-                          setState(() => _editando = true);
-                        },
-                        icon: const Icon(Icons.edit_outlined),
-                        label: const Text('Editar perfil'),
-                      )
-                    else ...[
-                      ElevatedButton.icon(
-                        onPressed: _guardando ? null : _guardarPerfil,
-                        icon: const Icon(Icons.save_outlined),
-                        label: Text(
-                          _guardando ? 'Guardando...' : 'Guardar cambios',
-                        ),
-                      ),
-                      const SizedBox(height: 10),
-                      OutlinedButton(
-                        onPressed: _guardando ? null : _cargarPerfil,
-                        child: const Text('Cancelar'),
+                      const SizedBox(height: 12),
+                      Text(_error!, textAlign: TextAlign.center),
+                      const SizedBox(height: 16),
+                      ElevatedButton(
+                        onPressed: _cargarPerfil,
+                        child: const Text('Reintentar'),
                       ),
                     ],
-
-                    const SizedBox(height: 30),
-
-                    const Text(
-                      'Privacidad y seguridad',
-                      style: TextStyle(
-                        fontSize: 20,
-                        fontWeight: FontWeight.bold,
-                        color: AppTheme.dark,
-                      ),
-                    ),
-
-                    const SizedBox(height: 14),
-
-                    _tarjetaSeguridad(),
-
-                    const SizedBox(height: 28),
-
-                    _botonCerrarSesion(),
-
-                    const SizedBox(height: 18),
-
-                    const Text(
-                      'CipherMed protege tu información '
-                      'personal y médica.',
-                      textAlign: TextAlign.center,
-                      style: TextStyle(color: Colors.black54, fontSize: 13),
-                    ),
-
-                    const SizedBox(height: 20),
-                  ],
+                  ),
                 ),
-              ),
-            ),
+              )
+            : _contenidoPerfil(),
+      ),
     );
   }
 }

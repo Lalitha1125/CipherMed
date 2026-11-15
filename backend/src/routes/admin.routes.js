@@ -70,6 +70,18 @@ const {
 } = require('../controllers/admin-audit.controller');
 
 // ==================================================
+// SOLICITUDES DE ACTUALIZACIÓN PROFESIONAL
+// ==================================================
+
+const {
+  listarSolicitudesProfesionales,
+  descargarDocumentoProfesional,
+  revisarSolicitudProfesional
+} = require(
+  '../controllers/admin-professional-requests.controller'
+);
+
+// ==================================================
 // CONFIGURACIÓN DE RUTAS
 // ==================================================
 
@@ -85,25 +97,21 @@ router.use(verificarAdministrador);
 // 1. ADMINISTRACIÓN DE PACIENTES
 // ==================================================
 
-// Consultar pacientes registrados.
 router.get(
   '/patients',
   listarPacientes
 );
 
-// Actualizar datos personales del paciente.
 router.patch(
   '/patients/:id',
   actualizarPaciente
 );
 
-// Desactivar cuenta de paciente.
 router.patch(
   '/patients/:id/deactivate',
   desactivarPaciente
 );
 
-// Reactivar cuenta de paciente.
 router.patch(
   '/patients/:id/reactivate',
   reactivarPaciente
@@ -113,25 +121,21 @@ router.patch(
 // 2. ADMINISTRACIÓN DE MÉDICOS
 // ==================================================
 
-// Consultar médicos registrados.
 router.get(
   '/doctors',
   listarMedicos
 );
 
-// Actualizar datos del médico.
 router.patch(
   '/doctors/:id',
   actualizarMedico
 );
 
-// Desactivar cuenta de médico.
 router.patch(
   '/doctors/:id/deactivate',
   desactivarMedico
 );
 
-// Reactivar cuenta de médico.
 router.patch(
   '/doctors/:id/reactivate',
   reactivarMedico
@@ -141,19 +145,16 @@ router.patch(
 // 3. SOLICITUDES DE CORRECCIÓN
 // ==================================================
 
-// Consultar solicitudes de corrección.
 router.get(
   '/correction-requests',
   listarSolicitudes
 );
 
-// Consultar médicos autorizados para una solicitud.
 router.get(
   '/correction-requests/:id/authorized-doctors',
   listarMedicosAutorizados
 );
 
-// Asignar un médico a una solicitud.
 router.patch(
   '/correction-requests/:id/assign',
   asignarMedico
@@ -163,7 +164,6 @@ router.patch(
 // 4. HISTORIAL CLÍNICO
 // ==================================================
 
-// Consultar metadatos del historial de un paciente.
 router.get(
   '/patients/:id/history',
   obtenerResumenHistorialPaciente
@@ -173,7 +173,6 @@ router.get(
 // 5. PERMISOS MÉDICOS
 // ==================================================
 
-// Consultar autorizaciones médicas.
 router.get(
   '/medical-permissions',
   listarPermisosMedicos
@@ -183,10 +182,31 @@ router.get(
 // 6. AUDITORÍA DEL SISTEMA
 // ==================================================
 
-// Consultar acciones registradas en la auditoría.
 router.get(
   '/audit',
   listarAuditoria
+);
+
+// ==================================================
+// 7. ACTUALIZACIÓN PROFESIONAL DE MÉDICOS
+// ==================================================
+
+// Consultar solicitudes profesionales.
+router.get(
+  '/professional-requests',
+  listarSolicitudesProfesionales
+);
+
+// Descargar documento PDF de una solicitud.
+router.get(
+  '/professional-requests/:id/document',
+  descargarDocumentoProfesional
+);
+
+// Aprobar o rechazar una solicitud profesional.
+router.patch(
+  '/professional-requests/:id/review',
+  revisarSolicitudProfesional
 );
 
 // ==================================================

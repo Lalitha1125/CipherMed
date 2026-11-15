@@ -11,6 +11,10 @@ const {
   obtenerIpSolicitud
 } = require('../services/audit.service');
 
+const {
+  crearPdfHistorial
+} = require('../services/medical-history-pdf.service');
+
 // ==================================================
 // VALIDAR DATOS MÉDICOS
 // ==================================================
@@ -56,7 +60,6 @@ function descifrarCampoOpcional(valor) {
 // ==================================================
 
 async function consultarHistorialesPaciente(idPaciente) {
-  // Primero se consultan los registros originales.
   const [registros] = await pool.execute(
     `SELECT
        ID_HISTORIAL,
@@ -74,8 +77,6 @@ async function consultarHistorialesPaciente(idPaciente) {
     return [];
   }
 
-  // Se consultan las correcciones de solicitudes resueltas
-  // y pertenecientes a los historiales del paciente.
   const [correcciones] = await pool.execute(
     `SELECT
        c.ID_CORRECCION,
@@ -100,7 +101,6 @@ async function consultarHistorialesPaciente(idPaciente) {
     [idPaciente, idPaciente]
   );
 
-  // Agrupar las correcciones por historial.
   const correccionesPorHistorial = new Map();
 
   for (const correccion of correcciones) {
@@ -113,8 +113,6 @@ async function consultarHistorialesPaciente(idPaciente) {
     correccionesPorHistorial.get(id).push(correccion);
   }
 
-  // Construir la versión vigente sin modificar
-  // el historial original en la base de datos.
   return registros.map((registro) => {
     const idHistorial = Number(registro.ID_HISTORIAL);
 
@@ -129,7 +127,6 @@ async function consultarHistorialesPaciente(idPaciente) {
     const correccionesDelHistorial =
       correccionesPorHistorial.get(idHistorial) || [];
 
-    // Obtener la última corrección registrada.
     const ultimaCorreccion =
       correccionesDelHistorial.length > 0
         ? correccionesDelHistorial[
@@ -139,7 +136,6 @@ async function consultarHistorialesPaciente(idPaciente) {
 
     const camposModificados = new Set();
 
-    // Aplicar las correcciones en orden cronológico.
     for (const correccion of correccionesDelHistorial) {
       const descripcion = descifrarCampoOpcional(
         correccion.DESCRIPCION_CORREGIDA
@@ -153,9 +149,7 @@ async function consultarHistorialesPaciente(idPaciente) {
         correccion.TRATAMIENTO_CORREGIDO
       );
 
-      // Un campo NULL significa que no fue corregido.
-      // Por lo tanto, conserva su valor vigente anterior.
-
+      // NULL significa que el campo no fue modificado.
       if (descripcion !== null) {
         vigente.descripcion = descripcion;
       }
@@ -169,7 +163,6 @@ async function consultarHistorialesPaciente(idPaciente) {
       }
     }
 
-    // Identificar los campos que realmente cambiaron.
     if (vigente.descripcion !== original.descripcion) {
       camposModificados.add('descripcion');
     }
@@ -185,19 +178,15 @@ async function consultarHistorialesPaciente(idPaciente) {
     return {
       idHistorial,
 
-      // La interfaz muestra los datos vigentes.
       descripcion: vigente.descripcion,
       diagnostico: vigente.diagnostico,
       tratamiento: vigente.tratamiento,
 
-      // Fecha original del historial.
       fechaRegistro: registro.FECHA_REGISTRO,
 
-      // Fecha de la última corrección aprobada.
       fechaUltimaCorreccion:
         ultimaCorreccion?.FECHA_CORRECCION ?? null,
 
-      // Información para Flutter.
       tieneCorrecciones:
         correccionesDelHistorial.length > 0,
 
@@ -206,7 +195,6 @@ async function consultarHistorialesPaciente(idPaciente) {
 
       camposModificados: [...camposModificados],
 
-      // El original se conserva para trazabilidad.
       historialOriginal: original
     };
   });
@@ -373,8 +361,11 @@ async function registrarHistorialComoMedico(req, res) {
     conexion = await pool.getConnection();
     await conexion.beginTransaction();
 
+    // Comprobar que el médico tiene permiso vigente.
     const [permisos] = await conexion.execute(
-      `SELECT a.ID_ACCESO
+      `SELECT
+         a.ID_ACCESO,
+         m.ID_MEDICO
        FROM AccesoMedico a
        INNER JOIN Medico m
          ON m.ID_MEDICO = a.ID_MEDICO
@@ -403,12 +394,34 @@ async function registrarHistorialComoMedico(req, res) {
       });
     }
 
+    const idMedico = Number(permisos[0].ID_MEDICO);
+
+    if (
+      !Number.isSafeInteger(idMedico) ||
+      idMedico <= 0
+    ) {
+      await conexion.rollback();
+
+      return res.status(403).json({
+        message:
+          'No fue posible identificar al médico responsable.'
+      });
+    }
+
+    // Guardar el médico real que realizó la atención.
     const [resultado] = await conexion.execute(
       `INSERT INTO Historial_Medico
-         (ID_USUARIO, DESCRIPCION, DIAGNOSTICO, TRATAMIENTO)
-       VALUES (?, ?, ?, ?)`,
+         (
+           ID_USUARIO,
+           ID_MEDICO,
+           DESCRIPCION,
+           DIAGNOSTICO,
+           TRATAMIENTO
+         )
+       VALUES (?, ?, ?, ?, ?)`,
       [
         idPaciente,
+        idMedico,
         descripcionCifrada,
         diagnosticoCifrado,
         tratamientoCifrado
@@ -461,9 +474,139 @@ async function registrarHistorialComoMedico(req, res) {
   }
 }
 
+// ==================================================
+// DESCARGAR HISTORIAL MÉDICO EN PDF
+// SOLO EL PACIENTE PROPIETARIO
+// ==================================================
+
+async function descargarHistorialPdf(req, res) {
+  try {
+    const idPaciente = Number(req.usuario?.id);
+    const idHistorial = Number(req.params.id);
+
+    if (
+      !Number.isSafeInteger(idPaciente) ||
+      idPaciente <= 0
+    ) {
+      return res.status(401).json({
+        message: 'Tu sesión no es válida.'
+      });
+    }
+
+    if (
+      !Number.isSafeInteger(idHistorial) ||
+      idHistorial <= 0
+    ) {
+      return res.status(400).json({
+        message:
+          'El identificador del historial no es válido.'
+      });
+    }
+
+    // Obtener solamente los historiales del paciente.
+    // La consulta devuelve los datos descifrados
+    // y las correcciones aprobadas aplicadas.
+    const historiales =
+      await consultarHistorialesPaciente(idPaciente);
+
+    const historial = historiales.find(
+      (item) =>
+        Number(item.idHistorial) === idHistorial
+    );
+
+    if (!historial) {
+      return res.status(404).json({
+        message: 'No se encontró el historial solicitado.'
+      });
+    }
+
+    // Consultar datos reales del paciente y del médico.
+    // LEFT JOIN permite historiales antiguos sin médico.
+    const [registros] = await pool.execute(
+      `SELECT
+         p.NOMBRE AS nombrePaciente,
+         p.APELLIDO AS apellidoPaciente,
+         m.ID_MEDICO AS idMedico,
+         m.ESPECIALIDAD AS especialidad,
+         m.NUMERO_LICENCIA AS numeroLicencia,
+         u.NOMBRE AS nombreMedico,
+         u.APELLIDO AS apellidoMedico
+       FROM Historial_Medico h
+       INNER JOIN Usuario p
+         ON p.ID_USUARIO = h.ID_USUARIO
+       LEFT JOIN Medico m
+         ON m.ID_MEDICO = h.ID_MEDICO
+       LEFT JOIN Usuario u
+         ON u.ID_USUARIO = m.ID_USUARIO
+       WHERE h.ID_HISTORIAL = ?
+         AND h.ID_USUARIO = ?
+       LIMIT 1`,
+      [idHistorial, idPaciente]
+    );
+
+    if (registros.length === 0) {
+      return res.status(404).json({
+        message: 'No se encontró el historial solicitado.'
+      });
+    }
+
+    const registro = registros[0];
+
+    const datosPdf = {
+      ...historial,
+
+      paciente: {
+        nombre: registro.nombrePaciente,
+        apellido: registro.apellidoPaciente
+      },
+
+      medico:
+        registro.idMedico == null
+          ? null
+          : {
+              nombre: registro.nombreMedico,
+              apellido: registro.apellidoMedico,
+              especialidad: registro.especialidad,
+              numeroLicencia: registro.numeroLicencia
+            }
+    };
+
+    // Registrar la descarga en la auditoría.
+    await registrarAuditoria({
+      idUsuario: idPaciente,
+      accion: `DESCARGA_PDF_HISTORIAL:${idHistorial}`,
+      ip: obtenerIpSolicitud(req)
+    });
+
+    // Generar el PDF usando el servicio importado
+    // al principio del controlador.
+    crearPdfHistorial(res, datosPdf);
+
+  } catch (error) {
+    console.error(
+      'ERROR COMPLETO AL GENERAR PDF:',
+      error
+    );
+
+    if (!res.headersSent) {
+      return res.status(500).json({
+        message:
+          'No fue posible generar el historial en PDF.'
+      });
+    }
+
+    res.destroy(error);
+  }
+}
+
+// ==================================================
+// EXPORTAR FUNCIONES
+// ==================================================
+
 module.exports = {
   obtenerHistoriales,
   obtenerHistorialesComoMedico,
   registrarHistorial,
-  registrarHistorialComoMedico
+  registrarHistorialComoMedico,
+  descargarHistorialPdf
 };

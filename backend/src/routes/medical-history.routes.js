@@ -2,7 +2,8 @@
 const express = require('express');
 
 const {
-  obtenerHistoriales
+  obtenerHistoriales,
+  descargarHistorialPdf
 } = require('../controllers/medical-history.controller');
 
 const {
@@ -15,21 +16,24 @@ const {
 
 const router = express.Router();
 
-// Primero comprobar la sesión.
+// Todas las rutas requieren una sesión válida.
 router.use(verificarSesion);
 
-// Solo los pacientes pueden consultar
-// su propio historial desde esta ruta.
+// El paciente consulta sus propios historiales.
 router.get(
   '/',
   permitirRoles('PACIENTE'),
   obtenerHistoriales
 );
 
-// El registro de diagnósticos y tratamientos
-// seguirá deshabilitado hasta implementar
-// los permisos correspondientes a médicos.
+// El paciente descarga únicamente un historial propio.
+router.get(
+  '/:id/pdf',
+  permitirRoles('PACIENTE'),
+  descargarHistorialPdf
+);
+
+// El registro de atenciones médicas no se habilita
+// en estas rutas exclusivas del paciente.
 
 module.exports = router;
-
-

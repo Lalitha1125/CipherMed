@@ -42,31 +42,28 @@ class _PatientCorrectionResultScreenState
 
   String _texto(dynamic valor) {
     final texto = valor?.toString().trim() ?? '';
-
     return texto.isEmpty ? 'No registrado' : texto;
   }
 
   String _fecha(dynamic valor) {
-    if (valor == null) {
-      return 'No disponible';
-    }
+    if (valor == null) return 'No disponible';
 
     final fecha = DateTime.tryParse(valor.toString());
 
-    if (fecha == null) {
-      return valor.toString();
-    }
+    if (fecha == null) return 'No disponible';
 
-    String dos(int numero) => numero.toString().padLeft(2, '0');
+    final dia = fecha.day.toString().padLeft(2, '0');
+    final mes = fecha.month.toString().padLeft(2, '0');
 
-    return '${dos(fecha.day)}/'
-        '${dos(fecha.month)}/'
-        '${fecha.year}';
+    return '$dia/$mes/${fecha.year}';
   }
 
-  // ==========================================
-  // TARJETA GENERAL
-  // ==========================================
+  Map<String, dynamic>? _mapa(dynamic valor) {
+    if (valor is Map) {
+      return Map<String, dynamic>.from(valor);
+    }
+    return null;
+  }
 
   Widget _seccion({
     required String titulo,
@@ -115,9 +112,50 @@ class _PatientCorrectionResultScreenState
     );
   }
 
-  // ==========================================
-  // TARJETA DE COMPARACIÓN MÉDICA
-  // ==========================================
+  Widget _bloqueTexto({
+    required String titulo,
+    required String contenido,
+    required Color fondo,
+    required IconData icono,
+  }) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(15),
+      decoration: BoxDecoration(
+        color: fondo,
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(icono, color: AppTheme.primary, size: 21),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  titulo,
+                  style: const TextStyle(
+                    fontWeight: FontWeight.bold,
+                    color: AppTheme.dark,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          SelectableText(
+            contenido,
+            style: const TextStyle(
+              fontSize: 15,
+              height: 1.5,
+              color: AppTheme.dark,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
 
   Widget _compararCampo({
     required String titulo,
@@ -125,9 +163,26 @@ class _PatientCorrectionResultScreenState
     required Map<String, dynamic> datos,
   }) {
     final original = _texto(datos['original']);
-    final corregido = _texto(datos['corregido']);
+    final valorCorregido = datos['corregido'];
+    final modificadoBackend = datos['modificado'] == true;
 
-    final modificado = datos['modificado'] == true;
+    // Si el médico no proporcionó un valor corregido,
+    // no presentamos ese campo como una corrección aplicada.
+    final tieneValorCorregido = valorCorregido != null;
+
+    final modificado = tieneValorCorregido && modificadoBackend;
+
+    final corregido = tieneValorCorregido
+        ? _texto(valorCorregido)
+        : 'No se proporcionó un valor corregido.';
+
+    final etiqueta = !tieneValorCorregido
+        ? 'Sin valor corregido'
+        : modificado
+        ? 'Campo modificado'
+        : 'Sin cambios';
+
+    final colorEstado = modificado ? const Color(0xFF18794E) : Colors.blueGrey;
 
     return Container(
       width: double.infinity,
@@ -157,9 +212,7 @@ class _PatientCorrectionResultScreenState
               ),
             ],
           ),
-
           const SizedBox(height: 14),
-
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
             decoration: BoxDecoration(
@@ -172,111 +225,69 @@ class _PatientCorrectionResultScreenState
               mainAxisSize: MainAxisSize.min,
               children: [
                 Icon(
-                  modificado
-                      ? Icons.check_circle_outline
-                      : Icons.remove_circle_outline,
+                  modificado ? Icons.check_circle_outline : Icons.info_outline,
                   size: 18,
-                  color: modificado ? const Color(0xFF18794E) : Colors.blueGrey,
+                  color: colorEstado,
                 ),
                 const SizedBox(width: 7),
-                Text(
-                  modificado ? 'Campo modificado' : 'Sin cambios',
-                  style: TextStyle(
-                    fontWeight: FontWeight.bold,
-                    color: modificado
-                        ? const Color(0xFF18794E)
-                        : Colors.blueGrey,
+                Flexible(
+                  child: Text(
+                    etiqueta,
+                    style: TextStyle(
+                      fontWeight: FontWeight.bold,
+                      color: colorEstado,
+                    ),
                   ),
                 ),
               ],
             ),
           ),
-
           const SizedBox(height: 18),
-
-          // INFORMACIÓN ORIGINAL
-          Container(
-            width: double.infinity,
-            padding: const EdgeInsets.all(15),
-            decoration: BoxDecoration(
-              color: const Color(0xFFF2F5F7),
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Row(
-                  children: [
-                    Icon(Icons.history_rounded, color: Colors.blueGrey),
-                    SizedBox(width: 8),
-                    Text(
-                      'Información original',
-                      style: TextStyle(
-                        fontWeight: FontWeight.bold,
-                        color: AppTheme.dark,
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 12),
-                SelectableText(
-                  original,
-                  style: const TextStyle(
-                    fontSize: 15,
-                    height: 1.5,
-                    color: AppTheme.dark,
-                  ),
-                ),
-              ],
-            ),
+          _bloqueTexto(
+            titulo: 'Información original',
+            contenido: original,
+            fondo: const Color(0xFFF2F5F7),
+            icono: Icons.history_rounded,
           ),
-
           const SizedBox(height: 12),
-
-          // INFORMACIÓN CORREGIDA
-          Container(
-            width: double.infinity,
-            padding: const EdgeInsets.all(15),
-            decoration: BoxDecoration(
-              color: const Color(0xFFEAF7EE),
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Row(
-                  children: [
-                    Icon(Icons.verified_outlined, color: Color(0xFF18794E)),
-                    SizedBox(width: 8),
-                    Text(
-                      'Información corregida',
-                      style: TextStyle(
-                        fontWeight: FontWeight.bold,
-                        color: AppTheme.dark,
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 12),
-                SelectableText(
-                  corregido,
-                  style: const TextStyle(
-                    fontSize: 15,
-                    height: 1.5,
-                    color: AppTheme.dark,
-                  ),
-                ),
-              ],
-            ),
+          _bloqueTexto(
+            titulo: 'Información corregida',
+            contenido: corregido,
+            fondo: modificado
+                ? const Color(0xFFEAF7EE)
+                : const Color(0xFFF2F5F7),
+            icono: Icons.verified_outlined,
           ),
         ],
       ),
     );
   }
 
-  // ==========================================
-  // PANTALLA PRINCIPAL
-  // ==========================================
+  Widget _mensajeError(String mensaje) {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Icon(Icons.error_outline, size: 48, color: Colors.redAccent),
+            const SizedBox(height: 16),
+            Text(
+              mensaje,
+              textAlign: TextAlign.center,
+              style: const TextStyle(color: AppTheme.dark, fontSize: 15),
+            ),
+            const SizedBox(height: 18),
+            ElevatedButton.icon(
+              onPressed: _actualizar,
+              icon: const Icon(Icons.refresh_rounded),
+              label: const Text('Reintentar'),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -302,63 +313,49 @@ class _PatientCorrectionResultScreenState
           }
 
           if (snapshot.hasError) {
-            return Center(
-              child: Padding(
-                padding: const EdgeInsets.all(24),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    const Icon(
-                      Icons.error_outline,
-                      size: 48,
-                      color: Colors.redAccent,
-                    ),
-                    const SizedBox(height: 16),
-                    Text(
-                      snapshot.error.toString().replaceFirst('Exception: ', ''),
-                      textAlign: TextAlign.center,
-                    ),
-                    const SizedBox(height: 18),
-                    ElevatedButton.icon(
-                      onPressed: _actualizar,
-                      icon: const Icon(Icons.refresh),
-                      label: const Text('Reintentar'),
-                    ),
-                  ],
-                ),
-              ),
+            return _mensajeError(
+              snapshot.error.toString().replaceFirst('Exception: ', ''),
             );
           }
 
-          final datos = snapshot.data!;
+          final datos = snapshot.data;
 
-          final solicitud = datos['solicitud'] as Map<String, dynamic>;
+          if (datos == null) {
+            return _mensajeError('No se recibió información médica.');
+          }
 
-          final respuesta = datos['respuesta'] as Map<String, dynamic>;
+          final solicitud = _mapa(datos['solicitud']);
+          final respuesta = _mapa(datos['respuesta']);
 
-          final decision = respuesta['decision']?.toString() ?? '';
+          if (solicitud == null || respuesta == null) {
+            return _mensajeError('La respuesta médica está incompleta.');
+          }
+
+          final decision = '${respuesta['decision'] ?? ''}'.toUpperCase();
 
           final resuelta = decision == 'RESUELTA';
+
+          final rechazada = decision == 'RECHAZADA';
 
           final nombreMedico =
               '${respuesta['nombreMedico'] ?? ''} '
                       '${respuesta['apellidoMedico'] ?? ''}'
                   .trim();
 
-          // Comparación recibida desde el backend.
-          final comparacionDatos = datos['comparacion'];
+          final comparacion = _mapa(datos['comparacion']);
 
-          final Map<String, dynamic>? comparacion =
-              comparacionDatos is Map<String, dynamic>
-              ? comparacionDatos
-              : null;
+          final descripcion = _mapa(comparacion?['descripcion']);
+
+          final diagnostico = _mapa(comparacion?['diagnostico']);
+
+          final tratamiento = _mapa(comparacion?['tratamiento']);
 
           return RefreshIndicator(
             onRefresh: _actualizar,
             child: ListView(
+              physics: const AlwaysScrollableScrollPhysics(),
               padding: const EdgeInsets.all(20),
               children: [
-                // ENCABEZADO
                 Container(
                   padding: const EdgeInsets.all(20),
                   decoration: BoxDecoration(
@@ -380,7 +377,9 @@ class _PatientCorrectionResultScreenState
                       Text(
                         resuelta
                             ? 'Corrección médica registrada'
-                            : 'Solicitud rechazada',
+                            : rechazada
+                            ? 'Solicitud rechazada'
+                            : 'Respuesta médica',
                         style: const TextStyle(
                           color: Colors.white,
                           fontSize: 16,
@@ -395,15 +394,12 @@ class _PatientCorrectionResultScreenState
                     ],
                   ),
                 ),
-
                 const SizedBox(height: 22),
-
                 _seccion(
                   titulo: 'Motivo de la solicitud',
                   contenido: _texto(solicitud['motivo']),
                   icono: Icons.assignment_outlined,
                 ),
-
                 _seccion(
                   titulo: 'Profesional responsable',
                   contenido: nombreMedico.isEmpty
@@ -411,20 +407,19 @@ class _PatientCorrectionResultScreenState
                       : nombreMedico,
                   icono: Icons.medical_services_outlined,
                 ),
-
                 _seccion(
                   titulo: 'Fecha de resolución',
-                  contenido: _fecha(respuesta['fechaCorreccion']),
+                  contenido: _fecha(
+                    respuesta['fechaCorreccion'] ??
+                        solicitud['fechaResolucion'],
+                  ),
                   icono: Icons.calendar_today_outlined,
                 ),
-
                 _seccion(
                   titulo: 'Justificación médica',
                   contenido: _texto(respuesta['justificacion']),
                   icono: Icons.description_outlined,
                 ),
-
-                // COMPARACIÓN DE VERSIONES
                 if (resuelta && comparacion != null) ...[
                   const Padding(
                     padding: EdgeInsets.symmetric(vertical: 14),
@@ -437,48 +432,34 @@ class _PatientCorrectionResultScreenState
                       ),
                     ),
                   ),
-
-                  if (comparacion['descripcion'] is Map<String, dynamic>)
+                  if (descripcion != null)
                     _compararCampo(
                       titulo: 'Descripción médica',
                       icono: Icons.description_outlined,
-                      datos: comparacion['descripcion'] as Map<String, dynamic>,
+                      datos: descripcion,
                     ),
-
-                  if (comparacion['diagnostico'] is Map<String, dynamic>)
+                  if (diagnostico != null)
                     _compararCampo(
                       titulo: 'Diagnóstico',
                       icono: Icons.medical_information_outlined,
-                      datos: comparacion['diagnostico'] as Map<String, dynamic>,
+                      datos: diagnostico,
                     ),
-
-                  if (comparacion['tratamiento'] is Map<String, dynamic>)
+                  if (tratamiento != null)
                     _compararCampo(
                       titulo: 'Tratamiento',
                       icono: Icons.medication_outlined,
-                      datos: comparacion['tratamiento'] as Map<String, dynamic>,
+                      datos: tratamiento,
                     ),
                 ],
-
                 if (resuelta && comparacion == null)
-                  Container(
-                    margin: const EdgeInsets.only(top: 12, bottom: 18),
-                    padding: const EdgeInsets.all(16),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFFFFF3E0),
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: const Text(
-                      'La comparación todavía no está '
-                      'disponible. Verifica que el backend '
-                      'esté actualizado.',
-                      style: TextStyle(color: AppTheme.dark),
-                    ),
+                  _seccion(
+                    titulo: 'Comparación no disponible',
+                    contenido:
+                        'No fue posible obtener la comparación '
+                        'de los datos médicos.',
+                    icono: Icons.info_outline,
                   ),
-
                 const SizedBox(height: 8),
-
-                // MENSAJE DE SEGURIDAD
                 Container(
                   padding: const EdgeInsets.all(16),
                   decoration: BoxDecoration(
@@ -492,18 +473,16 @@ class _PatientCorrectionResultScreenState
                       SizedBox(width: 12),
                       Expanded(
                         child: Text(
-                          'El historial médico original '
-                          'se conserva sin modificaciones. '
-                          'La corrección se almacena por '
-                          'separado para mantener el '
-                          'seguimiento de los cambios.',
+                          'Tu información médica se consulta '
+                          'mediante una sesión protegida. '
+                          'La respuesta del profesional queda '
+                          'registrada para su seguimiento.',
                           style: TextStyle(color: AppTheme.dark),
                         ),
                       ),
                     ],
                   ),
                 ),
-
                 const SizedBox(height: 24),
               ],
             ),

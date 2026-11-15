@@ -50,6 +50,11 @@ const doctorCorrectionsRoutes = require(
   './src/routes/doctor-corrections.routes'
 );
 
+const doctorProfessionalRequestsRoutes = require(
+  './src/routes/doctor-professional-requests.routes'
+);
+
+
 // NUEVA RUTA:
 // El paciente consulta el resultado de su corrección.
 const patientCorrectionResultRoutes = require(
@@ -205,6 +210,14 @@ app.use(
   '/api/doctor/correction-requests',
   doctorCorrectionsRoutes
 );
+
+// Solicitudes de actualización profesional del médico.
+app.use(
+  '/api/doctor/professional-requests',
+  doctorProfessionalRequestsRoutes
+);
+
+
 
 // ==========================================
 // NUEVA RUTA: RESULTADOS DE CORRECCIONES

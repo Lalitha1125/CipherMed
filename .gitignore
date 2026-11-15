@@ -50,3 +50,5 @@ build/
 
 # Archivos de configuración local
 *.log
+
+private_uploads/

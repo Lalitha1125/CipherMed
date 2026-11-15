@@ -4,11 +4,26 @@ import '../../../../core/theme/app_theme.dart';
 import 'medical_permissions_screen.dart';
 import 'patient_medical_history_screen.dart';
 import 'patient_profile_screen.dart';
+import 'patient_notifications_screen.dart';
 
 class PatientHomeScreen extends StatelessWidget {
   final String nombre;
 
   const PatientHomeScreen({super.key, required this.nombre});
+
+  // ==========================================
+  // ABRIR PERFIL DEL PACIENTE
+  // ==========================================
+
+  void _abrirPerfil(BuildContext context) {
+    Navigator.of(context).push(
+      MaterialPageRoute<void>(builder: (_) => const PatientProfileScreen()),
+    );
+  }
+
+  // ==========================================
+  // TARJETAS DE SERVICIOS
+  // ==========================================
 
   Widget _tarjetaServicio({
     required BuildContext context,
@@ -54,27 +69,50 @@ class PatientHomeScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: const Color(0xFFF4FAFC),
+
+      // ==========================================
+      // BARRA SUPERIOR
+      // ==========================================
       appBar: AppBar(
         title: const Text('CipherMed'),
         centerTitle: true,
         automaticallyImplyLeading: false,
         backgroundColor: const Color(0xFFF4FAFC),
+
+        // PERFIL EN LA ESQUINA SUPERIOR IZQUIERDA
+        leading: IconButton(
+          tooltip: 'Mi perfil',
+          icon: const Icon(
+            Icons.account_circle_outlined,
+            color: AppTheme.dark,
+            size: 28,
+          ),
+          onPressed: () => _abrirPerfil(context),
+        ),
+
+        // NOTIFICACIONES EN LA ESQUINA SUPERIOR DERECHA
         actions: [
           IconButton(
-            tooltip: 'Notificaciones',
+            tooltip: 'Mis notificaciones',
+            icon: const Icon(
+              Icons.notifications_outlined,
+              color: AppTheme.dark,
+              size: 28,
+            ),
             onPressed: () {
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  content: Text(
-                    'Las notificaciones estarán disponibles próximamente.',
-                  ),
+              Navigator.of(context).push(
+                MaterialPageRoute<void>(
+                  builder: (_) => const PatientNotificationsScreen(),
                 ),
               );
             },
-            icon: const Icon(Icons.notifications_none_rounded),
           ),
         ],
       ),
+
+      // ==========================================
+      // CONTENIDO PRINCIPAL
+      // ==========================================
       body: SafeArea(
         child: SingleChildScrollView(
           padding: const EdgeInsets.all(22),
@@ -82,6 +120,10 @@ class PatientHomeScreen extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               const SizedBox(height: 12),
+
+              // ==========================================
+              // BIENVENIDA
+              // ==========================================
               Container(
                 padding: const EdgeInsets.all(22),
                 decoration: BoxDecoration(
@@ -96,7 +138,9 @@ class PatientHomeScreen extends StatelessWidget {
                       color: Colors.white,
                       size: 42,
                     ),
+
                     const SizedBox(height: 18),
+
                     Text(
                       '¡Hola, $nombre!',
                       style: const TextStyle(
@@ -105,20 +149,29 @@ class PatientHomeScreen extends StatelessWidget {
                         fontWeight: FontWeight.bold,
                       ),
                     ),
+
                     const SizedBox(height: 8),
+
                     const Text(
-                      'Bienvenido a tu espacio de salud.',
+                      'Bienvenid@ a tu espacio de salud.',
                       style: TextStyle(color: Colors.white, fontSize: 15),
                     ),
+
                     const SizedBox(height: 12),
+
                     const Text(
-                      'Tu información médica merece protección.',
+                      'Toma el timón de tu información médica.',
                       style: TextStyle(color: Colors.white70, fontSize: 13),
                     ),
                   ],
                 ),
               ),
+
               const SizedBox(height: 30),
+
+              // ==========================================
+              // MIS SERVICIOS
+              // ==========================================
               const Text(
                 'Mis servicios',
                 style: TextStyle(
@@ -127,32 +180,40 @@ class PatientHomeScreen extends StatelessWidget {
                   color: AppTheme.dark,
                 ),
               ),
+
               const SizedBox(height: 18),
+
+              // ==========================================
+              // HISTORIAL MÉDICO
+              // ==========================================
               _tarjetaServicio(
                 context: context,
                 icono: Icons.folder_shared_outlined,
-                titulo: 'Historial médico',
+                titulo: 'Historial Clinico',
                 descripcion: 'Consulta tus diagnósticos y tratamientos.',
                 pantalla: const PatientMedicalHistoryScreen(),
               ),
+
               const SizedBox(height: 14),
-              _tarjetaServicio(
-                context: context,
-                icono: Icons.person_outline_rounded,
-                titulo: 'Mi perfil',
-                descripcion: 'Consulta y actualiza tus datos personales.',
-                pantalla: const PatientProfileScreen(),
-              ),
-              const SizedBox(height: 14),
+
+              // ==========================================
+              // PERMISOS MÉDICOS
+              // ==========================================
               _tarjetaServicio(
                 context: context,
                 icono: Icons.medical_information_outlined,
                 titulo: 'Permisos médicos',
                 descripcion:
-                    'Autoriza o revoca el acceso de médicos a tu historial.',
+                    'Autoriza o revoca el acceso de '
+                    'profesionales a tu historial.',
                 pantalla: const MedicalPermissionsScreen(),
               ),
+
               const SizedBox(height: 30),
+
+              // ==========================================
+              // INFORMACIÓN DE SEGURIDAD
+              // ==========================================
               Container(
                 padding: const EdgeInsets.all(18),
                 decoration: BoxDecoration(
@@ -162,16 +223,19 @@ class PatientHomeScreen extends StatelessWidget {
                 child: const Row(
                   children: [
                     Icon(Icons.lock_outline, color: AppTheme.primary),
+
                     SizedBox(width: 12),
+
                     Expanded(
                       child: Text(
-                        'Tu sesión ha sido verificada mediante autenticación multifactor.',
+                        'Tu sesión ha sido verificada. ',
                         style: TextStyle(color: AppTheme.dark, fontSize: 13),
                       ),
                     ),
                   ],
                 ),
               ),
+
               const SizedBox(height: 30),
             ],
           ),

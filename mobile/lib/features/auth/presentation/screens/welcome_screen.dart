@@ -109,7 +109,7 @@ class WelcomeScreen extends StatelessWidget {
               const SizedBox(height: 22),
 
               const Text(
-                'Protección y privacidad de tus datos médicos',
+                'Protección y privacidad de tus datos',
                 textAlign: TextAlign.center,
                 style: TextStyle(fontSize: 12, color: Colors.black45),
               ),
